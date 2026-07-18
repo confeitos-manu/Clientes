@@ -272,7 +272,7 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
     <div class="lancamento-card">
       <h3>⚡ Lançamento rápido</h3>
       <p style="font-size:13px;color:var(--cinza);margin-bottom:.85rem">Digite o WhatsApp — o cliente é vinculado automaticamente.</p>
-      <div class="whats-busca"><input type="text" id="lanc-whats" placeholder="(49) 99999-9999" oninput="buscarClientePorWhats(this.value)"></div>
+      <div class="whats-busca"><input type="text" id="lanc-whats" placeholder="Nome ou WhatsApp..." oninput="buscarClientePorWhats(this.value)"></div>
       <div id="lanc-resultado"></div>
       <div id="lanc-form" style="display:none"></div>
     </div>
@@ -386,7 +386,19 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
       <div class="fs"><label>Nome completo *</label><input type="text" id="fc-nome" placeholder="Ex: Maria Silva"></div>
       <div class="frow">
         <div class="fs"><label>CPF</label><input type="text" id="fc-cpf" placeholder="000.000.000-00"></div>
-        <div class="fs"><label>Aniversário</label><input type="text" id="fc-aniver" placeholder="DD/MM/AA" maxlength="8" oninput="mascaraData(this)"></div>
+        <div class="fs"><label>Aniversário</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem">
+            <select id="fc-aniver-dia" style="border:1px solid var(--borda);border-radius:8px;padding:.6rem .5rem;font-size:14px;font-family:'Inter',sans-serif;outline:none;background:var(--creme)">
+              <option value="">Dia</option>
+              ${Array.from({length:31},(_,i)=>`<option value="${String(i+1).padStart(2,'0')}">${i+1}</option>`).join('')}
+            </select>
+            <select id="fc-aniver-mes" style="border:1px solid var(--borda);border-radius:8px;padding:.6rem .5rem;font-size:14px;font-family:'Inter',sans-serif;outline:none;background:var(--creme)">
+              <option value="">Mês</option>
+              ${['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'].map((m,i)=>`<option value="${String(i+1).padStart(2,'0')}">${m}</option>`).join('')}
+            </select>
+            <input type="number" id="fc-aniver-ano" placeholder="Ano" min="1900" max="2099" style="border:1px solid var(--borda);border-radius:8px;padding:.6rem .75rem;font-size:14px;font-family:'Inter',sans-serif;outline:none;background:var(--creme)">
+          </div>
+        </div>
       </div>
       <div class="frow">
         <div class="fs"><label>WhatsApp *</label><input type="text" id="fc-whats" placeholder="(49) 99999-9999"></div>
@@ -436,14 +448,16 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
       <input type="hidden" id="fp-cli-id">
       <input type="hidden" id="fp-ped-id">
       <div class="section-title">Produto e valores</div>
-      <div class="fs"><label>Produto(s) *</label><input type="text" id="fp-produto" list="lista-produtos" autocomplete="off" placeholder="Ex: Buquê de rosas"></div>
-      <div class="frow">
-        <div class="fs"><label>Valor produto (R$)</label><input type="number" id="fp-valor" placeholder="0,00" min="0" step="0.01"></div>
-        <div class="fs"><label>Frete (R$)</label><input type="number" id="fp-entrega" placeholder="0,00" min="0" step="0.01"></div>
+      <div id="fp-itens-container"></div>
+      <button type="button" onclick="addItemPedido()" style="width:100%;background:var(--verde-bg);color:var(--verde);border:1px dashed var(--verde-claro);border-radius:8px;padding:.55rem;font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;margin-bottom:.75rem">+ Adicionar item</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;background:var(--creme2);border-radius:8px;padding:.6rem .9rem;margin-bottom:.75rem">
+        <span style="font-size:13px;font-weight:500;color:var(--cinza)">Total produtos</span>
+        <span style="font-size:15px;font-weight:600;color:var(--verde)" id="fp-total-label">R$ 0,00</span>
       </div>
+      <div class="fs"><label>Frete (R$)</label><input type="number" id="fp-entrega" placeholder="0,00" min="0" step="0.01"></div>
       <div class="frow">
-        <div class="fs"><label>Confirmação</label><input type="text" id="fp-data-conf" placeholder="DD/MM/AA" maxlength="8" oninput="mascaraData(this);syncDataEntrega()"></div>
-        <div class="fs"><label>Entrega</label><input type="text" id="fp-data" placeholder="DD/MM/AA" maxlength="8" oninput="mascaraData(this)"></div>
+        <div class="fs"><label>Confirmação</label><input type="date" id="fp-data-conf" onchange="syncDataEntrega()"></div>
+        <div class="fs"><label>Entrega</label><input type="date" id="fp-data"></div>
       </div>
       <div class="frow">
         <div class="fs"><label>Status</label>
@@ -476,7 +490,7 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
         <div style="font-size:12px;font-weight:600;color:var(--rosa);margin-bottom:.65rem;text-transform:uppercase;letter-spacing:.4px">🎂 Aniversariante</div>
         <div class="frow">
           <div class="fs" style="margin-bottom:0"><label>Nome</label><input type="text" id="fp-aniv-nome" placeholder="Ex: Ana Lima"></div>
-          <div class="fs" style="margin-bottom:0"><label>Data de aniversário</label><input type="text" id="fp-aniv-data" placeholder="DD/MM/AA" maxlength="8" oninput="mascaraData(this)"></div>
+          <div class="fs" style="margin-bottom:0"><label>Data de aniversário</label><input type="date" id="fp-aniv-data"></div>
         </div>
       </div>
       <div class="fs"><label>Enviado por</label><input type="text" id="fp-remetente" placeholder="Ex: João e Maria (se mais de um)"></div>
@@ -593,8 +607,8 @@ function exibeData(s){if(!s)return'';const iso=s.includes('/')?dataParaISO(s):s;
 function diasParaHoje(isoDate){if(!isoDate)return null;return Math.round((new Date(isoDate+'T12:00')-new Date())/(1000*60*60*24));}
 function ocasiaoLabel(o){return{'dia-das-mulheres':'👩 Dia das Mulheres',aniversario:'🎂 Aniversário','dia-das-maes':'💐 Dia das Mães','dia-dos-namorados':'❤️ Namorados',natal:'🎄 Natal',casamento:'💍 Casamento',formatura:'🎓 Formatura','dia-dos-pais':'👨 Dia dos Pais',pascoa:'🐣 Páscoa','sem-ocasiao':'Sem ocasião',outro:'Outro'}[o]||o||'—';}
 function vinculoLabel(v){return{conjuge:'💑 Cônjuge/Namorado(a)',familiar:'👨‍👩‍👧 Familiar',amigo:'🤝 Amigo(a)',colega:'💼 Colega',outro:'🔗 Outro'}[v]||v;}
-function calcPontos(peds){return Math.floor((peds||[]).filter(p=>p.status?.startsWith('finalizado')).reduce((s,p)=>s+(Number(p.valor)||0),0)/100);}
-function calcTicket(peds){const r=(peds||[]).filter(p=>p.status?.startsWith('finalizado'));if(!r.length)return 0;return r.reduce((s,p)=>s+(Number(p.valor)||0),0)/r.length;}
+function calcPontos(peds){return Math.floor((peds||[]).filter(p=>(p.status==='finalizado-ok'||p.status==='finalizado-problema')&&(Number(p.valor)||0)>0&&!p.produto?.startsWith('🎁 Resgate')).reduce((s,p)=>s+(Number(p.valor)||0),0)/100);}
+function calcTicket(peds){const r=(peds||[]).filter(p=>(p.status==='finalizado-ok'||p.status==='finalizado-problema')&&(Number(p.valor)||0)>0&&!p.produto?.startsWith('🎁 Resgate'));if(!r.length)return 0;return r.reduce((s,p)=>s+(Number(p.valor)||0),0)/r.length;}
 function toggleCancelado(s){document.getElementById('campo-retido').style.display=s==='cancelado'?'block':'none';}
 function toggleAniversario(o){document.getElementById('campos-aniversario').style.display=o==='aniversario'?'block':'none';}
 function atualizarDatalist(tipo){const map={produto:'lista-produtos',bairro:'lista-bairros',rua:'lista-ruas'};const dl=document.getElementById(map[tipo]);if(dl)dl.innerHTML=cadastros[tipo].map(v=>`<option value="${v}">`).join('');}
@@ -621,13 +635,38 @@ function aniversarioProximo(aniver,diasLimite=15){
   const hoje=new Date();
   const partes=aniver.split('-');
   if(partes.length<3)return null;
-  const anivEsteAno=new Date(`${hoje.getFullYear()}-${partes[1]}-${partes[2]}`);
+  const mes=partes[1],dia=partes[2];
+  if(!mes||!dia)return null;
+  const anivEsteAno=new Date(`${hoje.getFullYear()}-${mes}-${dia}T12:00`);
+  if(isNaN(anivEsteAno))return null;
   if(anivEsteAno<hoje)anivEsteAno.setFullYear(hoje.getFullYear()+1);
   const diff=Math.round((anivEsteAno-hoje)/(1000*60*60*24));
   return diff<=diasLimite?diff:null;
 }
 
-// ── ABAS ──────────────────────────────────────────────
+// Converte aniversário de qualquer formato para ISO YYYY-MM-DD
+function exibeAniver(aniver){
+  if(!aniver)return'—';
+  const p=aniver.split('-');
+  if(p.length<3)return'—';
+  const meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const dia=parseInt(p[2]);const mes=parseInt(p[1])-1;const ano=parseInt(p[0]);
+  if(!dia||isNaN(mes))return'—';
+  return`${dia} de ${meses[mes]}${ano>0?' de '+ano:''}`;
+}
+
+  if(!s)return'';
+  // já é ISO
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s;
+  // DD/MM/YY ou DD/MM/YYYY
+  const p=s.split('/');
+  if(p.length===3){
+    const ano=p[2].length===2?'19'+p[2]:p[2];
+    return`${ano}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+  }
+  return s;
+}
+
 function mudarAba(aba,el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   el.classList.add('active');
@@ -843,12 +882,37 @@ async function renderDatasQuentes(){
     const compradores=Object.values(pedidosPorCliente).flat().filter(p=>p.ocasiao===d.nome.toLowerCase().replace(/ /g,'-')&&p.data?.startsWith(String(hoje.getFullYear()-1))).length;
     return{...d,dias,compradores};
   }).sort((a,b)=>a.dias-b.dias);
-  document.getElementById('datas-calendario').innerHTML=proximas.map(d=>`
-    <div style="display:flex;align-items:center;gap:.75rem;padding:.6rem 0;border-bottom:1px solid var(--borda)">
-      <div style="font-size:20px">${d.icon}</div>
-      <div style="flex:1"><div style="font-size:13px;font-weight:500">${d.nome}</div><div style="font-size:11px;color:var(--muted)">${d.compradores>0?d.compradores+' clientes compraram no ano passado':'Sem histórico ainda'}</div></div>
-      <div style="text-align:right"><div style="font-size:12px;font-weight:500;color:var(--rosa)">${d.dias===0?'Hoje!':d.dias===1?'Amanhã':'Em '+d.dias+'d'}</div></div>
-    </div>`).join('');
+  document.getElementById('datas-calendario').innerHTML=proximas.map(d=>{
+    const ocasiaoKey=d.nome.toLowerCase().replace(/ /g,'-').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    const cliCompradores=[];
+    Object.entries(pedidosPorCliente).forEach(([cliId,peds])=>{
+      const cli=clientes.find(x=>x.id===cliId);
+      const pedOcasiao=peds.find(p=>p.ocasiao&&p.ocasiao.normalize('NFD').replace(/[\u0300-\u036f]/g,'')===ocasiaoKey&&p.data?.startsWith(String(hoje.getFullYear()-1)));
+      if(pedOcasiao&&cli)cliCompradores.push({cli,pedido:pedOcasiao,cliId});
+    });
+    const clicavel=cliCompradores.length>0;
+    return`<div style="border-bottom:1px solid var(--borda)">
+      <div style="display:flex;align-items:center;gap:.75rem;padding:.6rem 0;${clicavel?'cursor:pointer':''}" ${clicavel?`onclick="toggleCalendarioClientes('cal-${ocasiaoKey}')"`:''}> 
+        <div style="font-size:20px">${d.icon}</div>
+        <div style="flex:1"><div style="font-size:13px;font-weight:500">${d.nome}</div><div style="font-size:11px;color:var(--muted)">${clicavel?cliCompradores.length+' clientes compraram no ano passado — toque para ver':'Sem histórico ainda'}</div></div>
+        <div style="text-align:right">
+          <div style="font-size:12px;font-weight:500;color:var(--rosa)">${d.dias===0?'Hoje!':d.dias===1?'Amanhã':'Em '+d.dias+'d'}</div>
+          ${clicavel?`<div style="font-size:10px;color:var(--muted)">👆 ver clientes</div>`:''}
+        </div>
+      </div>
+      ${clicavel?`<div id="cal-${ocasiaoKey}" style="display:none;padding:.5rem 0 .75rem">${cliCompradores.map(x=>`
+        <div class="data-quente-card" style="margin-bottom:.35rem" onclick="verDetalhe('${x.cliId}')">
+          <div class="dq-icon">💐</div>
+          <div class="dq-info"><div class="dq-nome">${x.cli.nome}</div><div class="dq-sub">${x.pedido.produto}${x.pedido.destNome?' → '+x.pedido.destNome:''} · ${exibeData(x.pedido.data)}</div></div>
+          <div class="dq-data">${fmt(x.pedido.valor)}</div>
+        </div>`).join('')}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function toggleCalendarioClientes(id){
+  const el=document.getElementById(id);
+  if(el)el.style.display=el.style.display==='none'?'block':'none';
 }
 
 function reordenarPedido(cliId,pedidoId){
@@ -920,7 +984,7 @@ function renderDetalhe(c,peds,vinculos){
 
   html+=`<div class="det-grid">
     <div class="det-item"><div class="lbl">WhatsApp</div><div class="val">${c.whats||'—'}</div></div>
-    <div class="det-item"><div class="lbl">Aniversário</div><div class="val">${c.aniver?new Date(c.aniver+'T12:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'long'}):'—'}</div></div>
+    <div class="det-item"><div class="lbl">Aniversário</div><div class="val">${exibeAniver(c.aniver)}</div></div>
     <div class="det-item"><div class="lbl">Pedidos</div><div class="val">${nReais}</div></div>
     <div class="det-item"><div class="lbl">Ticket médio</div><div class="val">${ticket>0?fmt(ticket):'—'}</div></div>
     <div class="det-item"><div class="lbl">Cliente desde</div><div class="val">${clienteDesde}</div></div>
@@ -963,6 +1027,7 @@ function renderDetalhe(c,peds,vinculos){
         <div class="pedido-head"><div class="pedido-produto">${isCan?'<s>':''}${p.produto||'Produto'}${isCan?'</s>':''}</div>
         <div style="text-align:right"><div class="pedido-valor" style="${isCan?'text-decoration:line-through;color:var(--muted)':''}">${fmt(total)}</div>
         <span class="pedido-status status-${p.status||'finalizado-ok'}">${{'finalizado-ok':'✅ Ok','finalizado-problema':'⚠️ Problema','cancelado':'❌ Cancelado'}[p.status]||'Ok'}</span></div></div>
+        ${p.itens?.length>1?`<div style="margin:.35rem 0;padding:.4rem .6rem;background:var(--branco);border-radius:6px;font-size:12px">${p.itens.map(it=>`<div style="display:flex;justify-content:space-between;padding:.15rem 0;border-bottom:1px solid var(--borda)"><span>${it.produto}</span><span style="color:var(--verde);font-weight:500">${fmt(it.valor)}</span></div>`).join('')}</div>`:''}
         ${isCan&&p.valorRetido>0?`<div style="font-size:12px;color:var(--danger);font-weight:500;margin-bottom:.3rem">💰 Retido: ${fmt(p.valorRetido)}</div>`:''}
         <div class="pedido-meta">
           ${p.dataConfirmacao?`<span>📋 ${exibeData(p.dataConfirmacao)}</span>`:''}
@@ -989,7 +1054,12 @@ function abrirFormCliente(c=null){
   document.getElementById('fc-id').value=c?.id||'';
   document.getElementById('modal-cli-titulo').textContent=c?'Editar cliente':'Novo cliente';
   ['nome','cpf','whats','instagram','origem','logradouro','numero','complemento','bairro','obs'].forEach(f=>{const el=document.getElementById('fc-'+f);if(el)el.value=c?.[f]||'';});
-  document.getElementById('fc-aniver').value=ISOparaData(c?.aniver||'');
+  // Aniversário — preenche dia, mês e ano separados
+  const anivISO = converteAniver(c?.aniver||'');
+  const anivPartes = anivISO.split('-');
+  document.getElementById('fc-aniver-dia').value = anivPartes[2]||'';
+  document.getElementById('fc-aniver-mes').value = anivPartes[1]||'';
+  document.getElementById('fc-aniver-ano').value = anivPartes[0]||'';
   document.getElementById('modal-cliente').style.display='flex';
   setTimeout(()=>document.getElementById('fc-nome').focus(),100);
 }
@@ -1000,7 +1070,11 @@ function salvarCliente(){
   const num=document.getElementById('fc-numero').value.trim();
   const comp=document.getElementById('fc-complemento').value.trim();
   const bairro=document.getElementById('fc-bairro').value.trim();
-  const dados={nome,cpf:document.getElementById('fc-cpf').value.trim(),aniver:dataParaISO(document.getElementById('fc-aniver').value),whats:document.getElementById('fc-whats').value.trim(),instagram:document.getElementById('fc-instagram').value.trim(),origem:document.getElementById('fc-origem').value,logradouro:logr,numero:num,complemento:comp,bairro,endereco:[logr,num,comp].filter(Boolean).join(', '),obs:document.getElementById('fc-obs').value.trim(),atualizado:new Date().toISOString()};
+  const anivDia=document.getElementById('fc-aniver-dia').value;
+  const anivMes=document.getElementById('fc-aniver-mes').value;
+  const anivAno=document.getElementById('fc-aniver-ano').value;
+  const aniver=anivDia&&anivMes?(anivAno?`${anivAno}-${anivMes}-${anivDia}`:`0000-${anivMes}-${anivDia}`):'';
+  const dados={nome,cpf:document.getElementById('fc-cpf').value.trim(),aniver,whats:document.getElementById('fc-whats').value.trim(),instagram:document.getElementById('fc-instagram').value.trim(),origem:document.getElementById('fc-origem').value,logradouro:logr,numero:num,complemento:comp,bairro,endereco:[logr,num,comp].filter(Boolean).join(', '),obs:document.getElementById('fc-obs').value.trim(),atualizado:new Date().toISOString()};
   if(logr)autoSalvarCadastro('rua',logr);
   if(bairro)autoSalvarCadastro('bairro',bairro);
   const id=document.getElementById('fc-id').value;
@@ -1010,7 +1084,40 @@ function salvarCliente(){
 }
 function excluirCliente(id){if(!confirm('Excluir este cliente?'))return;db.collection('clientes').doc(id).delete().then(()=>{delete pedidosPorCliente[id];fechar('modal-detalhe');clienteAtualId=null;});}
 
-// ── FORM PEDIDO ───────────────────────────────────────
+// ── ITENS DO PEDIDO ───────────────────────────────────
+function renderItensPedido(itens){
+  const container = document.getElementById('fp-itens-container');
+  container.innerHTML = itens.map((item,i)=>itemRowHTML(item,i)).join('');
+  calcTotalItens();
+}
+function itemRowHTML(item,i){
+  return`<div class="pedido-item-row" style="display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem">
+    <input type="text" class="item-produto" list="lista-produtos" autocomplete="off" placeholder="Produto..." value="${item.produto||''}" oninput="calcTotalItens()" style="flex:2;border:1px solid var(--borda);border-radius:8px;padding:.6rem .75rem;font-size:14px;font-family:'Inter',sans-serif;outline:none;background:var(--creme)">
+    <input type="number" class="item-valor" placeholder="R$" value="${item.valor||''}" oninput="calcTotalItens()" min="0" step="0.01" style="flex:1;border:1px solid var(--borda);border-radius:8px;padding:.6rem .75rem;font-size:14px;font-family:'Inter',sans-serif;outline:none;background:var(--creme)">
+    <button type="button" onclick="removeItemPedido(this)" style="background:none;border:1px solid #f0a0a0;border-radius:8px;padding:.55rem .65rem;color:var(--danger);cursor:pointer;font-size:16px;flex-shrink:0">×</button>
+  </div>`;
+}
+function addItemPedido(){
+  const container = document.getElementById('fp-itens-container');
+  const div = document.createElement('div');
+  div.innerHTML = itemRowHTML({produto:'',valor:''},container.children.length);
+  container.appendChild(div.firstChild);
+  container.lastChild.querySelector('.item-produto').focus();
+  calcTotalItens();
+}
+function removeItemPedido(btn){
+  const container = document.getElementById('fp-itens-container');
+  if(container.children.length<=1){alert('O pedido precisa ter pelo menos um item.');return;}
+  btn.closest('.pedido-item-row').remove();
+  calcTotalItens();
+}
+function calcTotalItens(){
+  const total = Array.from(document.querySelectorAll('.item-valor')).reduce((s,el)=>s+(parseFloat(el.value)||0),0);
+  const label = document.getElementById('fp-total-label');
+  if(label) label.textContent = 'R$ '+total.toFixed(2).replace('.',',');
+}
+
+
 function abrirFormPedido(cliId,pedido=null){
   document.getElementById('fp-cli-id').value=cliId;
   document.getElementById('fp-ped-id').value=pedido?.id||'';
@@ -1020,28 +1127,37 @@ function abrirFormPedido(cliId,pedido=null){
     const k=f.replace(/-([a-z])/g,(_,l)=>l.toUpperCase());
     if(el)el.value=pedido?.[k]||pedido?.[f]||'';
   });
-  document.getElementById('fp-valor').value=pedido?.valor||'';
+  // Itens do pedido
+  const itens = pedido?.itens?.length ? pedido.itens : (pedido?.produto ? [{produto: pedido.produto, valor: pedido?.valor||0}] : [{produto:'',valor:''}]);
+  renderItensPedido(itens);
   document.getElementById('fp-entrega').value=pedido?.entrega||'';
   document.getElementById('fp-retido').value=pedido?.valorRetido||'';
-  document.getElementById('fp-data-conf').value=ISOparaData(pedido?.dataConfirmacao||'');
+  document.getElementById('fp-data-conf').value=pedido?.dataConfirmacao||'';
   document.getElementById('fp-data').value=ISOparaData(pedido?.data||'');
   document.getElementById('fp-aniv-nome').value=pedido?.anivNome||'';
-  document.getElementById('fp-aniv-data').value=ISOparaData(pedido?.anivData||'');
-  if(!pedido?.id){const hoje=ISOparaData(new Date().toISOString().split('T')[0]);document.getElementById('fp-data-conf').value=hoje;document.getElementById('fp-data').value=hoje;}
+  document.getElementById('fp-aniv-data').value=pedido?.anivData||'';
+  if(!pedido?.id){const hoje=new Date().toISOString().split('T')[0];document.getElementById('fp-data-conf').value=hoje;document.getElementById('fp-data').value=hoje;}
   toggleCancelado(pedido?.status||'finalizado-ok');
   toggleAniversario(pedido?.ocasiao||'');
   document.getElementById('modal-pedido').style.display='flex';
 }
 async function salvarPedido(){
   const cliId=document.getElementById('fp-cli-id').value;
-  const produto=document.getElementById('fp-produto').value.trim();
-  if(!produto){alert('Informe o produto.');return;}
+  // Coleta itens
+  const itensEls = document.querySelectorAll('.pedido-item-row');
+  const itens = Array.from(itensEls).map(row=>({
+    produto: row.querySelector('.item-produto').value.trim(),
+    valor: parseFloat(row.querySelector('.item-valor').value)||0
+  })).filter(i=>i.produto);
+  if(!itens.length){alert('Informe pelo menos um produto.');return;}
+  const produto = itens.map(i=>i.produto).join(', ');
+  const valor = itens.reduce((s,i)=>s+i.valor,0);
   const destLogr=document.getElementById('fp-dest-logradouro').value.trim();
   const destNum=document.getElementById('fp-dest-numero').value.trim();
   const destComp=document.getElementById('fp-dest-complemento').value.trim();
   const destBairro=document.getElementById('fp-dest-bairro').value.trim();
   const status=document.getElementById('fp-status').value;
-  const dados={produto,valor:parseFloat(document.getElementById('fp-valor').value)||0,entrega:parseFloat(document.getElementById('fp-entrega').value)||0,data:dataParaISO(document.getElementById('fp-data').value),dataConfirmacao:dataParaISO(document.getElementById('fp-data-conf').value),status,valorRetido:status==='cancelado'?(parseFloat(document.getElementById('fp-retido').value)||0):0,ocasiao:document.getElementById('fp-ocasiao').value,anivNome:document.getElementById('fp-ocasiao').value==='aniversario'?document.getElementById('fp-aniv-nome').value.trim():'',anivData:document.getElementById('fp-ocasiao').value==='aniversario'?dataParaISO(document.getElementById('fp-aniv-data').value):'',remetente:document.getElementById('fp-remetente').value.trim(),destNome:document.getElementById('fp-dest-nome').value.trim(),destTel:document.getElementById('fp-dest-tel').value.trim(),destLogradouro:destLogr,destNumero:destNum,destComplemento:destComp,destBairro,destEnd:[destLogr,destNum,destComp].filter(Boolean).join(', '),obs:document.getElementById('fp-obs').value.trim(),atualizado:new Date().toISOString()};
+  const dados={produto,valor,itens,entrega:parseFloat(document.getElementById('fp-entrega').value)||0,data:document.getElementById('fp-data').value,dataConfirmacao:document.getElementById('fp-data-conf').value,status,valorRetido:status==='cancelado'?(parseFloat(document.getElementById('fp-retido').value)||0):0,ocasiao:document.getElementById('fp-ocasiao').value,anivNome:document.getElementById('fp-ocasiao').value==='aniversario'?document.getElementById('fp-aniv-nome').value.trim():'',anivData:document.getElementById('fp-ocasiao').value==='aniversario'?document.getElementById('fp-aniv-data').value:'',remetente:document.getElementById('fp-remetente').value.trim(),destNome:document.getElementById('fp-dest-nome').value.trim(),destTel:document.getElementById('fp-dest-tel').value.trim(),destLogradouro:destLogr,destNumero:destNum,destComplemento:destComp,destBairro,destEnd:[destLogr,destNum,destComp].filter(Boolean).join(', '),obs:document.getElementById('fp-obs').value.trim(),atualizado:new Date().toISOString()};
   if(produto)autoSalvarCadastro('produto',produto);
   if(destLogr)autoSalvarCadastro('rua',destLogr);
   if(destBairro)autoSalvarCadastro('bairro',destBairro);
@@ -1088,10 +1204,14 @@ function buscarClientePorWhats(val){
   clearTimeout(lancTimer);
   document.getElementById('lanc-resultado').innerHTML='';
   document.getElementById('lanc-form').style.display='none';
-  if(val.replace(/\D/g,'').length<8)return;
+  if(val.trim().length<2)return;
   lancTimer=setTimeout(()=>{
     const digits=val.replace(/\D/g,'');
-    const found=clientes.filter(c=>c.whats?.replace(/\D/g,'').includes(digits));
+    const q=val.toLowerCase().trim();
+    const found=clientes.filter(c=>
+      c.nome?.toLowerCase().includes(q)||
+      (digits.length>=4&&c.whats?.replace(/\D/g,'').includes(digits))
+    ).slice(0,5);
     const el=document.getElementById('lanc-resultado');
     if(found.length){
       el.innerHTML=found.map(c=>`<div class="cliente-encontrado" onclick="selecionarClienteLanc('${c.id}')"><div class="avatar" style="background:${avatarCor(c.nome)};width:36px;height:36px;font-size:13px;flex-shrink:0">${iniciais(c.nome)}</div><div style="flex:1"><div style="font-weight:500;font-size:14px">${c.nome}</div><div style="font-size:12px;color:var(--cinza)">${c.whats} · ${c.totalPedidos||0} pedidos</div></div><span style="color:var(--verde);font-size:12px;font-weight:500">Selecionar →</span></div>`).join('');
@@ -1110,27 +1230,27 @@ function selecionarClienteLanc(cliId){
     <div class="fs"><label>Produto(s) *</label><input type="text" id="lf-produto" list="lista-produtos" autocomplete="off" placeholder="Ex: Buquê de rosas"></div>
     <div class="frow"><div class="fs"><label>Valor produto (R$)</label><input type="number" id="lf-valor" placeholder="0,00" min="0" step="0.01"></div><div class="fs"><label>Frete (R$)</label><input type="number" id="lf-entrega" placeholder="0,00" min="0" step="0.01"></div></div>
     <div class="frow">
-      <div class="fs"><label>Confirmação</label><input type="text" id="lf-data-conf" placeholder="DD/MM/AA" maxlength="8" oninput="mascaraData(this);document.getElementById('lf-data').value=this.value" value="${hoje}"></div>
-      <div class="fs"><label>Entrega</label><input type="text" id="lf-data" placeholder="DD/MM/AA" maxlength="8" oninput="mascaraData(this)" value="${hoje}"></div>
+      <div class="fs"><label>Confirmação</label><input type="text" id="lf-data-conf" type="date" onchange="document.getElementById('lf-data').value=this.value" value="${hoje}"></div>
+      <div class="fs"><label>Entrega</label><input type="text" id="lf-data" type="date" value="${hoje}"></div>
     </div>
     <div class="fs"><label>Ocasião</label>
       <select id="lf-ocasiao">
         <option value="">Não informada</option><option value="aniversario">Aniversário</option><option value="dia-das-mulheres">Dia das Mulheres</option><option value="dia-das-maes">Dia das Mães</option><option value="dia-dos-namorados">Dia dos Namorados</option><option value="natal">Natal</option><option value="casamento">Casamento</option><option value="formatura">Formatura</option><option value="dia-dos-pais">Dia dos Pais</option><option value="pascoa">Páscoa</option><option value="sem-ocasiao">Sem ocasião</option><option value="outro">Outro</option>
       </select>
     </div>
-    <div class="frow"><div class="fs"><label>Para quem vai</label><input type="text" id="lf-dest-nome" placeholder="Nome do destinatário"></div><div class="fs"><label>Bairro entrega</label><input type="text" id="lf-dest-bairro" list="lista-bairros" autocomplete="off" placeholder="Bairro"></div></div>
-    <div class="fs"><label>Obs rápida</label><input type="text" id="lf-obs" placeholder="Observação..."></div>
+    <div class="frow"><div class="fs"><label>Para quem vai</label><input type="text" id="lf-dest-nome" placeholder="Nome do destinatário"></div><div class="fs"><label>WhatsApp destinatário</label><input type="text" id="lf-dest-tel" placeholder="(49) 99999-9999"></div></div>
+    <div class="frow"><div class="fs"><label>Bairro entrega</label><input type="text" id="lf-dest-bairro" list="lista-bairros" autocomplete="off" placeholder="Bairro"></div><div class="fs"><label>Obs rápida</label><input type="text" id="lf-obs" placeholder="Observação..."></div></div>
     <div style="display:flex;gap:.6rem;margin-top:.75rem">
       <button class="btn-cancel" style="flex:none" onclick="resetLancamento()">Cancelar</button>
       <button class="btn-save" onclick="salvarPedidoRapido('${cliId}')">✅ Salvar pedido</button>
     </div>`;
   setTimeout(()=>formEl.querySelector('#lf-produto')?.focus(),100);
 }
-function resetLancamento(){document.getElementById('lanc-whats').value='';document.getElementById('lanc-resultado').innerHTML='';document.getElementById('lanc-form').style.display='none';document.getElementById('lanc-form').innerHTML='';document.getElementById('lanc-whats').focus();}
+function resetLancamento(){document.getElementById('lanc-resultado').innerHTML='';document.getElementById('lanc-form').style.display='none';document.getElementById('lanc-form').innerHTML='';document.getElementById('lanc-whats').focus();}
 async function salvarPedidoRapido(cliId){
   const produto=document.getElementById('lf-produto').value.trim();
   if(!produto){alert('Informe o produto.');return;}
-  const dados={produto,valor:parseFloat(document.getElementById('lf-valor').value)||0,entrega:parseFloat(document.getElementById('lf-entrega').value)||0,data:dataParaISO(document.getElementById('lf-data').value),dataConfirmacao:dataParaISO(document.getElementById('lf-data-conf').value),status:'finalizado-ok',ocasiao:document.getElementById('lf-ocasiao').value,destNome:document.getElementById('lf-dest-nome').value.trim(),destBairro:document.getElementById('lf-dest-bairro').value.trim(),obs:document.getElementById('lf-obs').value.trim(),criado:new Date().toISOString(),atualizado:new Date().toISOString()};
+  const dados={produto,valor:parseFloat(document.getElementById('lf-valor').value)||0,entrega:parseFloat(document.getElementById('lf-entrega').value)||0,data:document.getElementById('lf-data').value,dataConfirmacao:document.getElementById('lf-data-conf').value,status:'finalizado-ok',ocasiao:document.getElementById('lf-ocasiao').value,destNome:document.getElementById('lf-dest-nome').value.trim(),destTel:document.getElementById('lf-dest-tel').value.trim(),destBairro:document.getElementById('lf-dest-bairro').value.trim(),obs:document.getElementById('lf-obs').value.trim(),criado:new Date().toISOString(),atualizado:new Date().toISOString()};
   if(produto)autoSalvarCadastro('produto',produto);
   if(dados.destBairro)autoSalvarCadastro('bairro',dados.destBairro);
   await db.collection('clientes').doc(cliId).collection('pedidos').add(dados);
@@ -1148,7 +1268,7 @@ async function salvarPedidoRapido(cliId){
     }
   }
   atualizarStats();renderAlertasMini();resetLancamento();
-  document.getElementById('lanc-resultado').innerHTML=`<div style="background:var(--verde-bg);border:1px solid var(--verde-claro);border-radius:10px;padding:.85rem;font-size:13px;color:var(--verde);font-weight:500">✅ Pedido salvo! Digite outro número para continuar.</div>`;
+  document.getElementById('lanc-resultado').innerHTML=`<div style="background:var(--verde-bg);border:1px solid var(--verde-claro);border-radius:10px;padding:.85rem;font-size:13px;color:var(--verde);font-weight:500">✅ Pedido salvo! Busque outro cliente para continuar.</div>`;
   setTimeout(()=>document.getElementById('lanc-whats').focus(),100);
 }
 
@@ -1221,7 +1341,11 @@ async function renderRelatorio(){
   const mes=document.getElementById('rel-mes').value;
   if(!mes)return;
   await Promise.all(clientes.map(c=>getPedidos(c.id)));
-  const todosPedidos=Object.values(pedidosPorCliente).flat().filter(p=>p.data?.startsWith(mes)&&p.status?.startsWith('finalizado'));
+  const todosPedidos=Object.values(pedidosPorCliente).flat().filter(p=>
+    p.data?.startsWith(mes) &&
+    (p.status==='finalizado-ok'||p.status==='finalizado-problema') &&
+    (Number(p.valor)||0)>0 &&
+    !p.produto?.startsWith('🎁 Resgate'));
   if(!todosPedidos.length){document.getElementById('rel-resumo-topo').innerHTML='';document.getElementById('rel-conteudo').innerHTML=`<div class="empty"><div class="empty-icon">🌸</div><p>Nenhuma venda em ${formataMes(mes)}.</p></div>`;return;}
   const porProduto={};
   todosPedidos.forEach(p=>{const nome=p.produto||'Sem nome';if(!porProduto[nome])porProduto[nome]={nome,qtd:0,receita:0,frete:0};porProduto[nome].qtd++;porProduto[nome].receita+=Number(p.valor)||0;porProduto[nome].frete+=Number(p.entrega)||0;});
