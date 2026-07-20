@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -214,15 +215,47 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
 .section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem}
 .section-header h3{font-family:'Playfair Display',serif;font-size:.95rem;color:var(--verde);margin:0}
 .badge-count{background:var(--rosa);color:#fff;border-radius:20px;padding:1px 7px;font-size:11px;font-weight:600}
+/* LOGIN */
+.login-screen{position:fixed;inset:0;background:var(--verde);display:flex;align-items:center;justify-content:center;z-index:1000;padding:1.5rem}
+.login-box{background:var(--branco);border-radius:20px;padding:2rem 1.75rem;width:100%;max-width:360px;text-align:center}
+.login-logo{font-size:2.5rem;margin-bottom:.5rem}
+.login-box h1{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--verde);margin-bottom:.25rem}
+.login-box p{font-size:13px;color:var(--muted);margin-bottom:1.5rem}
+.login-box .fs{text-align:left;margin-bottom:1rem}
+.login-box .fs label{display:block;font-size:11px;font-weight:600;color:var(--cinza);margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.5px}
+.login-box .fs input{width:100%;border:1px solid var(--borda);border-radius:8px;padding:.65rem .9rem;font-size:14px;font-family:'Inter',sans-serif;outline:none;background:var(--creme)}
+.login-box .fs input:focus{border-color:var(--verde-claro)}
+.btn-login{width:100%;background:var(--verde);color:#fff;border:none;border-radius:8px;padding:.8rem;font-size:14px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;margin-top:.5rem}
+.btn-login:hover{background:var(--verde2)}
+.login-erro{background:var(--danger-bg);color:var(--danger);border-radius:8px;padding:.6rem .9rem;font-size:13px;margin-top:.75rem;display:none}
+.btn-sair{background:none;border:none;color:rgba(255,255,255,.7);font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;padding:.3rem .6rem}
+.btn-sair:hover{color:#fff}
 </style>
 </head>
 <body>
+<!-- TELA DE LOGIN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">🌿</div>
+    <h1>Confeitos · Clientes</h1>
+    <p>Acesso restrito — faça login para continuar</p>
+    <div class="fs"><label>E-mail</label><input type="email" id="login-email" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')fazerLogin()"></div>
+    <div class="fs"><label>Senha</label><input type="password" id="login-senha" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()"></div>
+    <button class="btn-login" onclick="fazerLogin()">Entrar</button>
+    <div class="login-erro" id="login-erro">E-mail ou senha incorretos.</div>
+  </div>
+</div>
+
+<div id="app-content" style="display:none">
 <div class="header">
   <div class="header-brand">
     <span style="font-size:20px">🌿</span>
     <div><h1>Confeitos · Clientes</h1><p id="data-hoje"></p></div>
   </div>
-  <button class="btn-primary" onclick="abrirFormCliente()">+ Cliente</button>
+  <div style="display:flex;align-items:center;gap:.5rem">
+    <button class="btn-primary" onclick="abrirFormCliente()">+ Cliente</button>
+    <button class="btn-sair" onclick="sair()" title="Sair">↩</button>
+  </div>
 </div>
 <div class="nav">
   <div class="nav-item active" onclick="mudarAba('clientes',this)">👥 Clientes</div>
@@ -556,10 +589,47 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
     </div>
   </div>
 </div>
+</div><!-- /app-content -->
 
 <script>
 firebase.initializeApp({apiKey:"AIzaSyBbZqLD7Ht6J-48LavV_IO9rKsIieJczlU",authDomain:"confeitos-clientes.firebaseapp.com",projectId:"confeitos-clientes"});
 const db=firebase.firestore();
+const auth=firebase.auth();
+
+// ── AUTH ──────────────────────────────────────────────
+auth.onAuthStateChanged(user=>{
+  if(user){
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app-content').style.display='block';
+    iniciarApp();
+  }else{
+    document.getElementById('login-screen').style.display='flex';
+    document.getElementById('app-content').style.display='none';
+  }
+});
+
+function fazerLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const senha=document.getElementById('login-senha').value;
+  const erro=document.getElementById('login-erro');
+  erro.style.display='none';
+  if(!email||!senha){erro.textContent='Preencha e-mail e senha.';erro.style.display='block';return;}
+  auth.signInWithEmailAndPassword(email,senha)
+    .catch(()=>{erro.textContent='E-mail ou senha incorretos.';erro.style.display='block';});
+}
+
+function sair(){
+  if(confirm('Deseja sair?'))auth.signOut();
+}
+
+let appIniciado=false;
+function iniciarApp(){
+  if(appIniciado)return;
+  appIniciado=true;
+  document.getElementById('data-hoje').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
+  inicializarListeners();
+}
+
 
 // ── STATE ─────────────────────────────────────────────
 let clientes=[],pedidosPorCliente={},clienteAtualId=null,filtrados=[];
@@ -567,9 +637,7 @@ let cadastros={produto:[],bairro:[],rua:[]};
 let custosProdutos={};
 let vinculoDestino=null;
 
-// ── INIT ──────────────────────────────────────────────
-document.getElementById('data-hoje').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
-
+function inicializarListeners(){
 db.collection('clientes').orderBy('nome').onSnapshot(snap=>{
   clientes=snap.docs.map(d=>({id:d.id,...d.data()}));
   filtrar();atualizarStats();renderAlertasMini();
@@ -591,6 +659,7 @@ db.collection('config').doc('custos-produtos').onSnapshot(snap=>{
   custosProdutos=snap.exists?(snap.data().custos||{}):{};
   if(document.getElementById('aba-relatorio').style.display!=='none'){renderCustosLista();renderRelatorio();}
 });
+} // fim inicializarListeners
 
 // ── HELPERS ───────────────────────────────────────────
 const tagLabel=t=>({frequente:'Frequente',eventual:'Eventual',corporativo:'Corporativo',novo:'Novo'}[t]||t);
@@ -666,6 +735,15 @@ function converteAniver(s){
     return`${ano}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
   }
   return s;
+}
+
+// Carrega pedidos em lotes para não sobrecarregar o Firebase
+async function getPedidosTodos(){
+  const semCache=clientes.filter(c=>!pedidosPorCliente[c.id]);
+  const LOTE=5;
+  for(let i=0;i<semCache.length;i+=LOTE){
+    await Promise.all(semCache.slice(i,i+LOTE).map(c=>getPedidos(c.id)));
+  }
 }
 
 function mudarAba(aba,el){
@@ -769,7 +847,7 @@ function renderCards(){
 
 // ── ALERTAS ───────────────────────────────────────────
 async function renderAlertas(){
-  await Promise.all(clientes.map(c=>getPedidos(c.id)));
+  await getPedidosTodos();
 
   // Aniversários clientes 15 dias
   const anivs=clientes.filter(c=>aniversarioProximo(c.aniver,15)!==null)
@@ -820,7 +898,7 @@ async function renderAlertas(){
 
 // ── DATAS QUENTES ─────────────────────────────────────
 async function renderDatasQuentes(){
-  await Promise.all(clientes.map(c=>getPedidos(c.id)));
+  await getPedidosTodos();
   const hoje=new Date();
   const mesAtual=hoje.getMonth();
   const diaAtual=hoje.getDate();
@@ -1002,7 +1080,7 @@ function renderDetalhe(c,peds,vinculos){
 
   // VÍNCULOS
   html+=`<div style="margin-top:1.25rem"><div class="section-title">🔗 Vínculos (${vinculos.length})</div>`;
-  html+=vinculos.length?vinculos.map(v=>`<div class="vinculo-card"><div class="vinculo-avatar" style="background:${avatarCor(v.nomeVinculado)}">${iniciais(v.nomeVinculado)}</div><div class="vinculo-info"><div class="vinculo-nome">${v.nomeVinculado}</div><div class="vinculo-tipo">${vinculoLabel(v.tipo)}${v.detalhe?' · '+v.detalhe:''}</div></div><div style="display:flex;gap:.4rem"><button class="btn-sm" onclick="verDetalhe('${v.idVinculado}');fechar('modal-detalhe')">Ver</button><button class="btn-sm btn-sm-del" onclick="removerVinculo('${c.id}','${v.id}','${v.idVinculado}')">×</button></div></div>`).join(''):`<p style="font-size:13px;color:var(--muted);padding:.5rem 0">Nenhum vínculo.</p>`;
+  html+=vinculos.length?vinculos.map(v=>`<div class="vinculo-card"><div class="vinculo-avatar" style="background:${avatarCor(v.nomeVinculado)}">${iniciais(v.nomeVinculado)}</div><div class="vinculo-info"><div class="vinculo-nome">${v.nomeVinculado}</div><div class="vinculo-tipo">${vinculoLabel(v.tipo)}${v.detalhe?' · '+v.detalhe:''}</div></div><div style="display:flex;gap:.4rem"><button class="btn-sm" onclick="fechar('modal-detalhe');setTimeout(()=>verDetalhe('${v.idVinculado}'),100)">Ver</button><button class="btn-sm btn-sm-del" onclick="removerVinculo('${c.id}','${v.id}','${v.idVinculado}')">×</button></div></div>`).join(''):`<p style="font-size:13px;color:var(--muted);padding:.5rem 0">Nenhum vínculo.</p>`;
   html+=`<button class="btn-add-vinculo" onclick="abrirModalVinculo('${c.id}')">+ Adicionar vínculo</button></div>`;
 
   // RECEBIMENTOS
@@ -1309,7 +1387,7 @@ function resgatar(cliId,nome,pts){
 
 // ── RESUMO ───────────────────────────────────────────
 async function renderResumo(){
-  await Promise.all(clientes.map(c=>getPedidos(c.id)));
+  await getPedidosTodos();
   const por={};clientes.forEach(c=>{const t=c.tag||'novo';por[t]=(por[t]||0)+1;});
   const total=clientes.length||1;
   const ordem=['frequente','corporativo','eventual','novo'];
@@ -1331,7 +1409,7 @@ async function renderResumo(){
 
 // ── PONTOS ───────────────────────────────────────────
 async function renderPontos(){
-  await Promise.all(clientes.map(c=>getPedidos(c.id)));
+  await getPedidosTodos();
   const ranking=clientes.map(c=>({...c,pts:calcPontos(pedidosPorCliente[c.id]||[]),total:(pedidosPorCliente[c.id]||[]).filter(p=>p.status?.startsWith('finalizado')).reduce((s,p)=>s+(Number(p.valor)||0),0)})).sort((a,b)=>b.pts-a.pts).slice(0,20);
   const el=document.getElementById('ranking-lista');
   el.innerHTML=ranking.length?ranking.map((c,i)=>`<div class="ranking-item"><div class="rank-num">${i+1}</div><div class="rank-avatar" style="background:${avatarCor(c.nome)}">${iniciais(c.nome)}</div><div class="rank-info"><div class="rank-nome">${c.nome}</div><div class="rank-sub">⭐ ${c.pts} pts · ${fmt(c.total)}</div></div><button class="resgatar-btn" onclick="resgatar('${c.id}','${c.nome}',${c.pts})" ${c.pts<10?'disabled':''}>${c.pts>=10?'🎁':'🔒'}</button></div>`).join(''):`<p style="color:var(--muted);font-size:13px">Nenhum dado ainda.</p>`;
@@ -1341,7 +1419,7 @@ async function renderPontos(){
 async function renderRelatorio(){
   const mes=document.getElementById('rel-mes').value;
   if(!mes)return;
-  await Promise.all(clientes.map(c=>getPedidos(c.id)));
+  await getPedidosTodos();
   const todosPedidos=Object.values(pedidosPorCliente).flat().filter(p=>
     p.data?.startsWith(mes) &&
     (p.status==='finalizado-ok'||p.status==='finalizado-problema') &&
