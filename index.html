@@ -602,6 +602,8 @@ const db=firebase.firestore();
 const auth=firebase.auth();
 
 // ── AUTH ──────────────────────────────────────────────
+auth.getRedirectResult().catch(()=>{});
+
 auth.onAuthStateChanged(user=>{
   if(user){
     document.getElementById('login-screen').style.display='none';
@@ -625,11 +627,7 @@ function fazerLogin(){
 
 function entrarComGoogle(){
   const provider=new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(provider).catch(e=>{
-    const erro=document.getElementById('login-erro');
-    erro.textContent='Erro ao entrar com Google. Tente novamente.';
-    erro.style.display='block';
-  });
+  auth.signInWithRedirect(provider);
 }
 
 function sair(){
