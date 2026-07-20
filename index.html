@@ -648,11 +648,9 @@ let vinculoDestino=null;
 function inicializarListeners(){
 db.collection('clientes').orderBy('nome').onSnapshot(snap=>{
   clientes=snap.docs.map(d=>({id:d.id,...d.data()}));
-  filtrar();atualizarStats();renderAlertasMini();
-  if(!document.getElementById('aba-alertas').style.display||document.getElementById('aba-alertas').style.display!=='none')renderAlertas();
-  if(document.getElementById('aba-datas').style.display!=='none')renderDatasQuentes();
-  if(document.getElementById('aba-resumo').style.display!=='none')renderResumo();
-  if(document.getElementById('aba-pontos').style.display!=='none')renderPontos();
+  filtrar();atualizarStats();
+  // Alertas mini carrega só clientes (sem pedidos) — rápido
+  renderAlertasMini();
 },err=>{document.getElementById('lista-clientes').innerHTML=`<div class="empty"><div class="empty-icon">⚠️</div><p>${err.message}</p></div>`;});
 
 ['produto','bairro','rua'].forEach(tipo=>{
@@ -814,7 +812,7 @@ function atualizarStats(){
 // ── ALERTAS MINI (na aba clientes) ────────────────────
 function renderAlertasMini(){
   const anivs=clientes.filter(c=>aniversarioProximo(c.aniver,15)!==null);
-  const inativos=clientes.filter(c=>{const d=diasInativo(pedidosPorCliente[c.id]||[]);return d&&d>90;});
+  const inativos=clientes.filter(c=>c.ultimaCompra&&Math.round((new Date()-new Date(c.ultimaCompra+'T12:00'))/(1000*60*60*24))>90);
   const el=document.getElementById('alertas-mini');
   let html='';
   if(anivs.length)html+=`<div class="alertas-bar"><div class="alerta" onclick="mudarAba('alertas',document.querySelectorAll('.nav-item')[2])"><div class="alerta-icon">🎂</div><div class="alerta-texto"><strong>${anivs.length} aniversário${anivs.length>1?'s':''} nos próximos 15 dias</strong>Toque para ver quem são</div></div></div>`;
@@ -1256,7 +1254,7 @@ async function salvarPedido(){
   const peds=await getPedidos(cliId);
   const total=peds.filter(p=>p.status?.startsWith('finalizado')).length;
   const perfilAuto=calcularPerfil(total);
-  await db.collection('clientes').doc(cliId).update({totalPedidos:total,tag:perfilAuto});
+  const datas_=peds.filter(p=>p.status?.startsWith('finalizado')&&p.data).map(p=>p.data).sort();await db.collection('clientes').doc(cliId).update({totalPedidos:total,tag:perfilAuto,ultimaCompra:datas_[datas_.length-1]||null});
   // registra recebimento em destinatário
   if(dados.destNome&&dados.status?.startsWith('finalizado')){
     const destC=clientes.find(cl=>cl.nome?.toLowerCase()===dados.destNome.toLowerCase()||cl.whats===dados.destTel);
@@ -1281,7 +1279,7 @@ async function excluirPedido(cliId,pedidoId){
   const peds=await getPedidos(cliId);
   const total=peds.filter(p=>p.status?.startsWith('finalizado')).length;
   const perfilAuto=calcularPerfil(total);
-  await db.collection('clientes').doc(cliId).update({totalPedidos:total,tag:perfilAuto});
+  const datas_=peds.filter(p=>p.status?.startsWith('finalizado')&&p.data).map(p=>p.data).sort();await db.collection('clientes').doc(cliId).update({totalPedidos:total,tag:perfilAuto,ultimaCompra:datas_[datas_.length-1]||null});
   await verDetalhe(cliId);atualizarStats();
 }
 
@@ -1345,7 +1343,7 @@ async function salvarPedidoRapido(cliId){
   const peds=await getPedidos(cliId);
   const total=peds.filter(p=>p.status?.startsWith('finalizado')).length;
   const perfilAuto=calcularPerfil(total);
-  await db.collection('clientes').doc(cliId).update({totalPedidos:total,tag:perfilAuto});
+  const datas_=peds.filter(p=>p.status?.startsWith('finalizado')&&p.data).map(p=>p.data).sort();await db.collection('clientes').doc(cliId).update({totalPedidos:total,tag:perfilAuto,ultimaCompra:datas_[datas_.length-1]||null});
   if(dados.destNome){
     const destC=clientes.find(cl=>cl.nome?.toLowerCase()===dados.destNome.toLowerCase());
     if(destC&&destC.id!==cliId){
