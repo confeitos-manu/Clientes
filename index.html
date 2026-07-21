@@ -265,6 +265,7 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
   <div class="nav-item" onclick="mudarAba('resumo',this)">📊 Resumo</div>
   <div class="nav-item" onclick="mudarAba('pontos',this)">⭐ Pontos</div>
   <div class="nav-item" onclick="mudarAba('cadastros',this)">⚙️</div>
+  <div class="nav-item" onclick="mudarAba('importar',this)">📥 Importar</div>
 </div>
 <div class="main">
 
@@ -392,6 +393,11 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
       <div class="cadastro-input-row"><input type="text" id="inp-produto" placeholder="Nome do produto..." onkeydown="if(event.key==='Enter')addCadastro('produto')"><button class="btn-primary" onclick="addCadastro('produto')">+ Add</button></div>
       <div id="list-produto"></div>
     </div>
+    <div class="resumo-card"><h3>🎉 Ocasiões personalizadas</h3>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:.6rem">As ocasiões fixas (Natal, Dia das Mães...) sempre aparecem. Adicione aqui datas extras como "Dia do Amigo", "Dia da Mulher Negra", etc.</p>
+      <div class="cadastro-input-row"><input type="text" id="inp-ocasiao" placeholder="Nome da ocasião..." onkeydown="if(event.key==='Enter')addCadastro('ocasiao')"><button class="btn-primary" onclick="addCadastro('ocasiao')">+ Add</button></div>
+      <div id="list-ocasiao"></div>
+    </div>
     <div class="resumo-card"><h3>📍 Bairros</h3>
       <div class="cadastro-input-row"><input type="text" id="inp-bairro" placeholder="Nome do bairro..." onkeydown="if(event.key==='Enter')addCadastro('bairro')"><button class="btn-primary" onclick="addCadastro('bairro')">+ Add</button></div>
       <div id="list-bairro"></div>
@@ -422,11 +428,11 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem">
             <select id="fc-aniver-dia" style="border:1px solid var(--borda);border-radius:8px;padding:.6rem .5rem;font-size:14px;font-family:'Inter',sans-serif;outline:none;background:var(--creme)">
               <option value="">Dia</option>
-              ${Array.from({length:31},(_,i)=>`<option value="${String(i+1).padStart(2,'0')}">${i+1}</option>`).join('')}
+<option value="01">1</option><option value="02">2</option><option value="03">3</option><option value="04">4</option><option value="05">5</option><option value="06">6</option><option value="07">7</option><option value="08">8</option><option value="09">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option><option value="31">31</option>
             </select>
             <select id="fc-aniver-mes" style="border:1px solid var(--borda);border-radius:8px;padding:.6rem .5rem;font-size:14px;font-family:'Inter',sans-serif;outline:none;background:var(--creme)">
               <option value="">Mês</option>
-              ${['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'].map((m,i)=>`<option value="${String(i+1).padStart(2,'0')}">${m}</option>`).join('')}
+<option value="01">Janeiro</option><option value="02">Fevereiro</option><option value="03">Março</option><option value="04">Abril</option><option value="05">Maio</option><option value="06">Junho</option><option value="07">Julho</option><option value="08">Agosto</option><option value="09">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
             </select>
             <input type="number" id="fc-aniver-ano" placeholder="Ano" min="1900" max="2099" style="border:1px solid var(--borda);border-radius:8px;padding:.6rem .75rem;font-size:14px;font-family:'Inter',sans-serif;outline:none;background:var(--creme)">
           </div>
@@ -445,7 +451,7 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
       </div>
       <div class="section-title">Outras informações</div>
       <div class="fs"><label>Como conheceu</label>
-        <select id="fc-origem">
+        <select id="fc-origem" onchange="toggleIndicacao(this.value)">
           <option value="">Não informado</option>
           <option value="instagram">Instagram</option>
           <option value="indicacao">Indicação</option>
@@ -454,6 +460,13 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
           <option value="whatsapp">WhatsApp</option>
           <option value="outro">Outro</option>
         </select>
+      </div>
+      <div id="campo-indicacao" style="display:none">
+        <div class="fs"><label>Indicado por</label>
+          <input type="text" id="fc-indicado-busca" placeholder="Digite o nome do cliente..." oninput="buscarIndicado(this.value)" autocomplete="off">
+          <input type="hidden" id="fc-indicado-id">
+          <div id="fc-indicado-resultado" style="margin-top:.35rem"></div>
+        </div>
       </div>
       <div class="fs"><label>Observações</label><textarea id="fc-obs" placeholder="Preferências, detalhes importantes..."></textarea></div>
       <div class="form-actions">
@@ -475,7 +488,7 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
 <!-- MODAL PEDIDO -->
 <div class="overlay" id="modal-pedido" style="display:none">
   <div class="modal">
-    <div class="modal-head"><h2 id="modal-ped-titulo">Novo pedido</h2><button class="btn-x" onclick="fechar('modal-pedido')">×</button></div>
+    <div class="modal-head"><h2 id="modal-ped-titulo">Novo pedido</h2><button class="btn-x" onclick="fecharModalPedido()">×</button></div>
     <div class="modal-body">
       <input type="hidden" id="fp-cli-id">
       <input type="hidden" id="fp-ped-id">
@@ -539,7 +552,7 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
       </div>
       <div class="fs"><label>Observações</label><textarea id="fp-obs" placeholder="Detalhes especiais, recados..."></textarea></div>
       <div class="form-actions">
-        <button class="btn-cancel" onclick="fechar('modal-pedido')">Cancelar</button>
+        <button class="btn-cancel" onclick="fecharModalPedido()">Cancelar</button>
         <button class="btn-save" onclick="salvarPedido()">Salvar pedido</button>
       </div>
     </div>
@@ -588,6 +601,34 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
     </div>
   </div>
 </div>
+</div><!-- /main -->
+
+<!-- ABA IMPORTAR -->
+<div id="aba-importar" style="display:none">
+  <div class="resumo-pad">
+    <div class="resumo-card">
+      <h3>📱 Importar conversa do WhatsApp</h3>
+      <p style="font-size:13px;color:var(--cinza);line-height:1.6;margin-bottom:.75rem">Cole aqui o texto de uma conversa exportada do WhatsApp. A IA vai identificar automaticamente o cliente, produtos, valores e datas.</p>
+      <div style="font-size:12px;background:var(--dourado-bg);border-radius:8px;padding:.6rem .85rem;margin-bottom:.75rem;color:#8a6a30">
+        <strong>Como exportar:</strong> Abra a conversa → 3 pontinhos → Mais → Exportar conversa → Sem mídia
+      </div>
+      <textarea id="import-texto" placeholder="Cole aqui o texto da conversa..." style="width:100%;height:160px;border:1px solid var(--borda);border-radius:8px;padding:.75rem;font-size:13px;font-family:'Inter',sans-serif;outline:none;background:var(--creme);resize:vertical"></textarea>
+      <button class="btn-save" style="width:100%;margin-top:.75rem" onclick="analisarWhatsApp()">🤖 Analisar com IA</button>
+      <div id="import-resultado" style="margin-top:1rem"></div>
+    </div>
+    <div class="resumo-card">
+      <h3>📋 Importar contatos (.csv)</h3>
+      <p style="font-size:13px;color:var(--cinza);line-height:1.6;margin-bottom:.75rem">Exporte seus contatos do Google Contatos em formato .csv e importe aqui.</p>
+      <div style="font-size:12px;background:var(--azul-bg);border-radius:8px;padding:.6rem .85rem;margin-bottom:.75rem;color:#3a6ea5">
+        <strong>Como exportar:</strong> contacts.google.com → Exportar → Google CSV
+      </div>
+      <input type="file" id="import-csv" accept=".csv" onchange="importarCSV(this)" style="display:none">
+      <button class="btn-primary" style="width:100%" onclick="document.getElementById('import-csv').click()">📂 Selecionar arquivo .csv</button>
+      <div id="import-csv-resultado" style="margin-top:1rem"></div>
+    </div>
+  </div>
+</div><!-- /aba-importar -->
+
 </div><!-- /app-content -->
 
 <script>
@@ -641,7 +682,7 @@ function iniciarApp(){
 
 // ── STATE ─────────────────────────────────────────────
 let clientes=[],pedidosPorCliente={},clienteAtualId=null,filtrados=[];
-let cadastros={produto:[],bairro:[],rua:[]};
+let cadastros={produto:[],bairro:[],rua:[],ocasiao:[]};
 let custosProdutos={};
 let vinculoDestino=null;
 
@@ -653,11 +694,12 @@ db.collection('clientes').orderBy('nome').onSnapshot(snap=>{
   renderAlertasMini();
 },err=>{document.getElementById('lista-clientes').innerHTML=`<div class="empty"><div class="empty-icon">⚠️</div><p>${err.message}</p></div>`;});
 
-['produto','bairro','rua'].forEach(tipo=>{
+['produto','bairro','rua','ocasiao'].forEach(tipo=>{
   db.collection('config').doc(tipo+'s').onSnapshot(snap=>{
     cadastros[tipo]=snap.exists?(snap.data().lista||[]).sort():[];
-    atualizarDatalist(tipo);
+    if(tipo!=='ocasiao')atualizarDatalist(tipo);
     if(document.getElementById('aba-cadastros').style.display!=='none')renderCadastro(tipo);
+    if(tipo==='ocasiao')atualizarSelectOcasiao();
   });
 });
 
@@ -680,11 +722,35 @@ function dataParaISO(s){if(!s)return'';const p=s.split('/');if(p.length!==3)retu
 function ISOparaData(s){if(!s)return'';const p=s.split('-');if(p.length!==3)return s.includes('/')?s:'';return`${p[2]}/${p[1]}/${p[0].slice(2)}`;}
 function exibeData(s){if(!s)return'';const iso=s.includes('/')?dataParaISO(s):s;if(!iso)return'';return new Date(iso+'T12:00').toLocaleDateString('pt-BR');}
 function diasParaHoje(isoDate){if(!isoDate)return null;return Math.round((new Date(isoDate+'T12:00')-new Date())/(1000*60*60*24));}
-function ocasiaoLabel(o){return{'dia-das-mulheres':'👩 Dia das Mulheres',aniversario:'🎂 Aniversário','dia-das-maes':'💐 Dia das Mães','dia-dos-namorados':'❤️ Namorados',natal:'🎄 Natal',casamento:'💍 Casamento',formatura:'🎓 Formatura','dia-dos-pais':'👨 Dia dos Pais',pascoa:'🐣 Páscoa','sem-ocasiao':'Sem ocasião',outro:'Outro'}[o]||o||'—';}
-function vinculoLabel(v){return{conjuge:'💑 Cônjuge/Namorado(a)',familiar:'👨‍👩‍👧 Familiar',amigo:'🤝 Amigo(a)',colega:'💼 Colega',outro:'🔗 Outro'}[v]||v;}
+function ocasiaoLabel(o){
+  if(cadastros.ocasiao?.includes(o))return'🎉 '+o;
+  return{'dia-das-mulheres':'👩 Dia das Mulheres',aniversario:'🎂 Aniversário','dia-das-maes':'💐 Dia das Mães','dia-dos-namorados':'❤️ Namorados',natal:'🎄 Natal',casamento:'💍 Casamento',formatura:'🎓 Formatura','dia-dos-pais':'👨 Dia dos Pais',pascoa:'🐣 Páscoa','sem-ocasiao':'Sem ocasião',outro:'Outro'}[o]||o||'—';
+}
+const OCASIOES_FIXAS='<option value="">Não informada</option><option value="aniversario">Aniversário</option><option value="dia-das-mulheres">Dia das Mulheres</option><option value="dia-das-maes">Dia das Mães</option><option value="dia-dos-namorados">Dia dos Namorados</option><option value="natal">Natal</option><option value="casamento">Casamento</option><option value="formatura">Formatura</option><option value="dia-dos-pais">Dia dos Pais</option><option value="pascoa">Páscoa</option><option value="sem-ocasiao">Sem ocasião especial</option><option value="outro">Outro</option>';
+function atualizarSelectOcasiao(){
+  const extras=cadastros.ocasiao.map(o=>`<option value="${o}">${o}</option>`).join('');
+  const html=OCASIOES_FIXAS+(extras?`<optgroup label="── Personalizadas ──">${extras}</optgroup>`:'');
+  ['fp-ocasiao','lf-ocasiao'].forEach(id=>{const el=document.getElementById(id);if(el){const val=el.value;el.innerHTML=html;el.value=val;}});
+}
+function vinculoLabel(v){return{conjuge:'💑 Cônjuge/Namorado(a)',familiar:'👨‍👩‍👧 Familiar',amigo:'🤝 Amigo(a)',colega:'💼 Colega',indicacao:'🌟 Indicação',outro:'🔗 Outro'}[v]||v;}
 function calcPontos(peds){return Math.floor((peds||[]).filter(p=>(p.status==='finalizado-ok'||p.status==='finalizado-problema')&&(Number(p.valor)||0)>0&&!p.produto?.startsWith('🎁 Resgate')).reduce((s,p)=>s+(Number(p.valor)||0),0)/100);}
 function calcTicket(peds){const r=(peds||[]).filter(p=>(p.status==='finalizado-ok'||p.status==='finalizado-problema')&&(Number(p.valor)||0)>0&&!p.produto?.startsWith('🎁 Resgate'));if(!r.length)return 0;return r.reduce((s,p)=>s+(Number(p.valor)||0),0)/r.length;}
-function toggleCancelado(s){document.getElementById('campo-retido').style.display=s==='cancelado'?'block':'none';}
+function toggleIndicacao(val){
+  document.getElementById('campo-indicacao').style.display=val==='indicacao'?'block':'none';
+  if(val!=='indicacao'){document.getElementById('fc-indicado-id').value='';document.getElementById('fc-indicado-busca').value='';}
+}
+function buscarIndicado(val){
+  const el=document.getElementById('fc-indicado-resultado');
+  if(val.length<2){el.innerHTML='';return;}
+  const found=clientes.filter(c=>c.nome?.toLowerCase().includes(val.toLowerCase())).slice(0,5);
+  el.innerHTML=found.length?found.map(c=>`<div onclick="selecionarIndicado('${c.id}','${c.nome}')" style="padding:.5rem .75rem;border:1px solid var(--borda);border-radius:8px;margin-bottom:.3rem;cursor:pointer;background:var(--creme);font-size:13px">${c.nome} <span style="color:var(--muted);font-size:11px">${c.whats||''}</span></div>`).join(''):'';
+}
+function selecionarIndicado(id,nome){
+  document.getElementById('fc-indicado-id').value=id;
+  document.getElementById('fc-indicado-busca').value=nome;
+  document.getElementById('fc-indicado-resultado').innerHTML=`<div style="background:var(--verde-bg);border-radius:8px;padding:.4rem .75rem;font-size:13px;color:var(--verde)">✓ ${nome}</div>`;
+}
+
 function toggleAniversario(o){document.getElementById('campos-aniversario').style.display=o==='aniversario'?'block':'none';}
 function atualizarDatalist(tipo){const map={produto:'lista-produtos',bairro:'lista-bairros',rua:'lista-ruas'};const dl=document.getElementById(map[tipo]);if(dl)dl.innerHTML=cadastros[tipo].map(v=>`<option value="${v}">`).join('');}
 function autoSalvarCadastro(tipo,valor){if(!valor)return;const lista=cadastros[tipo];if(lista.map(v=>v.toLowerCase()).includes(valor.toLowerCase()))return;db.collection('config').doc(tipo+'s').set({lista:[...lista,valor].sort()});}
@@ -755,14 +821,14 @@ async function getPedidosTodos(){
 function mudarAba(aba,el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   el.classList.add('active');
-  ['clientes','lancamento','alertas','datas','relatorio','resumo','pontos','cadastros'].forEach(a=>{
+  ['clientes','lancamento','alertas','datas','relatorio','resumo','pontos','cadastros','importar'].forEach(a=>{
     document.getElementById('aba-'+a).style.display=a===aba?'block':'none';
   });
   if(aba==='alertas')renderAlertas();
   if(aba==='datas')renderDatasQuentes();
   if(aba==='resumo')renderResumo();
   if(aba==='pontos')renderPontos();
-  if(aba==='cadastros')['produto','bairro','rua'].forEach(renderCadastro);
+  if(aba==='cadastros')['produto','ocasiao','bairro','rua'].forEach(renderCadastro);
   if(aba==='relatorio'){
     if(!document.getElementById('rel-mes').value)document.getElementById('rel-mes').value=new Date().toISOString().slice(0,7);
     renderRelatorio();renderCustosLista();
@@ -1076,6 +1142,8 @@ function renderDetalhe(c,peds,vinculos){
     <div class="det-item"><div class="lbl">Última compra</div><div class="val">${ultimaCompra}</div></div>
   </div>`;
 
+  if(c.indicadoPorNome)html+=`<div class="det-full"><div class="lbl">Indicado por</div><div class="val">🌟 ${c.indicadoPorNome}</div></div>`;
+  if(c.totalIndicacoes>0)html+=`<div class="det-full"><div class="lbl">Indicações feitas</div><div class="val">🌟 Indicou ${c.totalIndicacoes} cliente${c.totalIndicacoes!==1?'s':''}</div></div>`;
   const end=[c.endereco,c.bairro].filter(Boolean).join(' · ');
   if(end)html+=`<div class="det-full"><div class="lbl">Endereço</div><div class="val">${end}</div></div>`;
   if(c.instagram)html+=`<div class="det-full"><div class="lbl">Instagram</div><div class="val">${c.instagram}</div></div>`;
@@ -1145,6 +1213,10 @@ function abrirFormCliente(c=null){
   document.getElementById('fc-aniver-dia').value = anivPartes[2]||'';
   document.getElementById('fc-aniver-mes').value = anivPartes[1]||'';
   document.getElementById('fc-aniver-ano').value = anivPartes[0]||'';
+  toggleIndicacao(c?.origem||'');
+  document.getElementById('fc-indicado-id').value=c?.indicadoPorId||'';
+  document.getElementById('fc-indicado-busca').value=c?.indicadoPorNome||'';
+  document.getElementById('fc-indicado-resultado').innerHTML=c?.indicadoPorNome?`<div style="background:var(--verde-bg);border-radius:8px;padding:.4rem .75rem;font-size:13px;color:var(--verde)">✓ ${c.indicadoPorNome}</div>`:'';
   document.getElementById('modal-cliente').style.display='flex';
   setTimeout(()=>document.getElementById('fc-nome').focus(),100);
 }
@@ -1159,13 +1231,34 @@ function salvarCliente(){
   const anivMes=document.getElementById('fc-aniver-mes').value;
   const anivAno=document.getElementById('fc-aniver-ano').value;
   const aniver=anivDia&&anivMes?(anivAno?`${anivAno}-${anivMes}-${anivDia}`:`0000-${anivMes}-${anivDia}`):'';
-  const dados={nome,cpf:document.getElementById('fc-cpf').value.trim(),aniver,whats:document.getElementById('fc-whats').value.trim(),instagram:document.getElementById('fc-instagram').value.trim(),origem:document.getElementById('fc-origem').value,logradouro:logr,numero:num,complemento:comp,bairro,endereco:[logr,num,comp].filter(Boolean).join(', '),obs:document.getElementById('fc-obs').value.trim(),atualizado:new Date().toISOString()};
+  const indicadoPorId=document.getElementById('fc-indicado-id').value;
+  const indicadoPorNome=document.getElementById('fc-indicado-busca').value.trim();
+  const dados={nome,cpf:document.getElementById('fc-cpf').value.trim(),aniver,whats:document.getElementById('fc-whats').value.trim(),instagram:document.getElementById('fc-instagram').value.trim(),origem:document.getElementById('fc-origem').value,indicadoPorId:indicadoPorId||'',indicadoPorNome:indicadoPorId?indicadoPorNome:'',logradouro:logr,numero:num,complemento:comp,bairro,endereco:[logr,num,comp].filter(Boolean).join(', '),obs:document.getElementById('fc-obs').value.trim(),atualizado:new Date().toISOString()};
   if(logr)autoSalvarCadastro('rua',logr);
   if(bairro)autoSalvarCadastro('bairro',bairro);
   const id=document.getElementById('fc-id').value;
   const col=db.collection('clientes');
   const prom=id?col.doc(id).update(dados):(dados.criado=new Date().toISOString(),col.add(dados));
-  prom.then(()=>fechar('modal-cliente')).catch(e=>alert('Erro: '+e.message));
+  prom.then(async(ref)=>{
+    // Cria vínculo de indicação nos dois sentidos
+    if(indicadoPorId){
+      const novoId=ref?.id||id;
+      if(novoId&&novoId!==indicadoPorId){
+        const vinA={idVinculado:indicadoPorId,nomeVinculado:indicadoPorNome,tipo:'indicacao',detalhe:'Indicou este cliente',criado:new Date().toISOString()};
+        const vinB={idVinculado:novoId,nomeVinculado:nome,tipo:'indicacao',detalhe:'Indicado por',criado:new Date().toISOString()};
+        // Só cria se não existir
+        const snap=await db.collection('clientes').doc(novoId).collection('vinculos').where('idVinculado','==',indicadoPorId).where('tipo','==','indicacao').get();
+        if(snap.empty){
+          await db.collection('clientes').doc(novoId).collection('vinculos').add(vinA);
+          await db.collection('clientes').doc(indicadoPorId).collection('vinculos').add(vinB);
+          // Atualiza contador de indicações
+          const indSnap=await db.collection('clientes').doc(indicadoPorId).collection('vinculos').where('tipo','==','indicacao').get();
+          await db.collection('clientes').doc(indicadoPorId).update({totalIndicacoes:indSnap.size});
+        }
+      }
+    }
+    fechar('modal-cliente');
+  }).catch(e=>alert('Erro: '+e.message));
 }
 function excluirCliente(id){if(!confirm('Excluir este cliente?'))return;db.collection('clientes').doc(id).delete().then(()=>{delete pedidosPorCliente[id];fechar('modal-detalhe');clienteAtualId=null;});}
 
@@ -1176,8 +1269,11 @@ function renderItensPedido(itens){
   calcTotalItens();
 }
 function itemRowHTML(item,i){
+  const dlId='dl-item-'+i+'-'+Date.now();
+  const opts=cadastros.produto.map(v=>`<option value="${v}">`).join('');
   return`<div class="pedido-item-row" style="display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem">
-    <input type="text" class="item-produto" list="lista-produtos" autocomplete="off" placeholder="Produto..." value="${item.produto||''}" oninput="calcTotalItens()" style="flex:2;border:1px solid var(--borda);border-radius:8px;padding:.6rem .75rem;font-size:14px;font-family:'Inter',sans-serif;outline:none;background:var(--creme)">
+    <input type="text" class="item-produto" list="${dlId}" autocomplete="off" placeholder="Produto..." value="${item.produto||''}" oninput="calcTotalItens()" style="flex:2;border:1px solid var(--borda);border-radius:8px;padding:.6rem .75rem;font-size:14px;font-family:'Inter',sans-serif;outline:none;background:var(--creme)">
+    <datalist id="${dlId}">${opts}</datalist>
     <input type="number" class="item-valor" placeholder="R$" value="${item.valor||''}" oninput="calcTotalItens()" min="0" step="0.01" style="flex:1;border:1px solid var(--borda);border-radius:8px;padding:.6rem .75rem;font-size:14px;font-family:'Inter',sans-serif;outline:none;background:var(--creme)">
     <button type="button" onclick="removeItemPedido(this)" style="background:none;border:1px solid #f0a0a0;border-radius:8px;padding:.55rem .65rem;color:var(--danger);cursor:pointer;font-size:16px;flex-shrink:0">×</button>
   </div>`;
@@ -1207,26 +1303,56 @@ function abrirFormPedido(cliId,pedido=null){
   document.getElementById('fp-cli-id').value=cliId;
   document.getElementById('fp-ped-id').value=pedido?.id||'';
   document.getElementById('modal-ped-titulo').textContent=pedido?.id?'Editar pedido':'Novo pedido';
-  ['produto','status','ocasiao','obs','dest-nome','dest-tel','dest-logradouro','dest-numero','dest-complemento','dest-bairro','remetente'].forEach(f=>{
+
+  // Verifica rascunho salvo (só para pedidos novos)
+  if(!pedido?.id){
+    const rascunhoKey='rascunho-pedido-'+cliId;
+    const rascunho=sessionStorage.getItem(rascunhoKey);
+    if(rascunho){
+      const r=JSON.parse(rascunho);
+      const continuar=confirm('📝 Você tem um pedido não finalizado para este cliente. Deseja continuar de onde parou?');
+      if(continuar){pedido=r;}
+      else{sessionStorage.removeItem(rascunhoKey);}
+    }
+  }
+
+  ['status','ocasiao','obs','dest-nome','dest-tel','dest-logradouro','dest-numero','dest-complemento','dest-bairro','remetente'].forEach(f=>{
     const el=document.getElementById('fp-'+f);
     const k=f.replace(/-([a-z])/g,(_,l)=>l.toUpperCase());
     if(el)el.value=pedido?.[k]||pedido?.[f]||'';
   });
-  // Itens do pedido
   const itens = pedido?.itens?.length ? pedido.itens : (pedido?.produto ? [{produto: pedido.produto, valor: pedido?.valor||0}] : [{produto:'',valor:''}]);
   renderItensPedido(itens);
   document.getElementById('fp-entrega').value=pedido?.entrega||'';
   document.getElementById('fp-retido').value=pedido?.valorRetido||'';
   document.getElementById('fp-data-conf').value=pedido?.dataConfirmacao||'';
-  document.getElementById('fp-data').value=ISOparaData(pedido?.data||'');
+  document.getElementById('fp-data').value=pedido?.data||'';
   document.getElementById('fp-aniv-nome').value=pedido?.anivNome||'';
   document.getElementById('fp-aniv-data').value=pedido?.anivData||'';
-  if(!pedido?.id){const hoje=new Date().toISOString().split('T')[0];document.getElementById('fp-data-conf').value=hoje;document.getElementById('fp-data').value=hoje;}
+  if(!pedido?.id&&!pedido?.dataConfirmacao){const hoje=new Date().toISOString().split('T')[0];document.getElementById('fp-data-conf').value=hoje;document.getElementById('fp-data').value=hoje;}
   toggleCancelado(pedido?.status||'finalizado-ok');
   toggleAniversario(pedido?.ocasiao||'');
+  atualizarSelectOcasiao();
   document.getElementById('modal-pedido').style.display='flex';
+
+  // Auto-salva rascunho a cada mudança (só pedidos novos)
+  if(!pedido?.id||!document.getElementById('fp-ped-id').value){
+    clearInterval(window._rascunhoTimer);
+    window._rascunhoTimer=setInterval(()=>salvarRascunho(cliId),3000);
+  }
 }
-async function salvarPedido(){
+
+function salvarRascunho(cliId){
+  const itensEls=document.querySelectorAll('.pedido-item-row');
+  const itens=Array.from(itensEls).map(row=>({produto:row.querySelector('.item-produto').value.trim(),valor:parseFloat(row.querySelector('.item-valor').value)||0})).filter(i=>i.produto);
+  const rascunho={itens,entrega:parseFloat(document.getElementById('fp-entrega').value)||0,data:document.getElementById('fp-data').value,dataConfirmacao:document.getElementById('fp-data-conf').value,status:document.getElementById('fp-status').value,ocasiao:document.getElementById('fp-ocasiao').value,obs:document.getElementById('fp-obs').value.trim(),destNome:document.getElementById('fp-dest-nome').value.trim(),destTel:document.getElementById('fp-dest-tel').value.trim(),destBairro:document.getElementById('fp-dest-bairro').value.trim(),remetente:document.getElementById('fp-remetente').value.trim()};
+  if(itens.length)sessionStorage.setItem('rascunho-pedido-'+cliId,JSON.stringify(rascunho));
+}
+function fecharModalPedido(){
+  clearInterval(window._rascunhoTimer);
+  fechar('modal-pedido');
+}
+
   const cliId=document.getElementById('fp-cli-id').value;
   // Coleta itens
   const itensEls = document.querySelectorAll('.pedido-item-row');
@@ -1243,7 +1369,7 @@ async function salvarPedido(){
   const destBairro=document.getElementById('fp-dest-bairro').value.trim();
   const status=document.getElementById('fp-status').value;
   const dados={produto,valor,itens,entrega:parseFloat(document.getElementById('fp-entrega').value)||0,data:document.getElementById('fp-data').value,dataConfirmacao:document.getElementById('fp-data-conf').value,status,valorRetido:status==='cancelado'?(parseFloat(document.getElementById('fp-retido').value)||0):0,ocasiao:document.getElementById('fp-ocasiao').value,anivNome:document.getElementById('fp-ocasiao').value==='aniversario'?document.getElementById('fp-aniv-nome').value.trim():'',anivData:document.getElementById('fp-ocasiao').value==='aniversario'?document.getElementById('fp-aniv-data').value:'',remetente:document.getElementById('fp-remetente').value.trim(),destNome:document.getElementById('fp-dest-nome').value.trim(),destTel:document.getElementById('fp-dest-tel').value.trim(),destLogradouro:destLogr,destNumero:destNum,destComplemento:destComp,destBairro,destEnd:[destLogr,destNum,destComp].filter(Boolean).join(', '),obs:document.getElementById('fp-obs').value.trim(),atualizado:new Date().toISOString()};
-  if(produto)autoSalvarCadastro('produto',produto);
+  itens.forEach(it=>{if(it.produto)autoSalvarCadastro('produto',it.produto);});
   if(destLogr)autoSalvarCadastro('rua',destLogr);
   if(destBairro)autoSalvarCadastro('bairro',destBairro);
   const pedidoId=document.getElementById('fp-ped-id').value;
@@ -1267,7 +1393,8 @@ async function salvarPedido(){
       }
     }
   }
-  fechar('modal-pedido');
+  fecharModalPedido();
+  sessionStorage.removeItem('rascunho-pedido-'+cliId);
   await verDetalhe(cliId);
   atualizarStats();renderAlertasMini();
 }
@@ -1464,11 +1591,145 @@ function salvarCustoProduto(){
     .then(()=>{fechar('modal-custo');renderRelatorio();renderCustosLista();}).catch(e=>alert('Erro: '+e.message));
 }
 
-// ── CADASTROS ────────────────────────────────────────
+// ── IMPORTAR WHATSAPP ─────────────────────────────────
+async function analisarWhatsApp(){
+  const texto=document.getElementById('import-texto').value.trim();
+  if(!texto){alert('Cole o texto da conversa primeiro.');return;}
+  const el=document.getElementById('import-resultado');
+  el.innerHTML=`<div class="empty"><p>🤖 Analisando conversa...</p></div>`;
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',max_tokens:1000,
+        messages:[{role:'user',content:`Analise esta conversa de WhatsApp de uma floricultura/confeitaria e extraia as informações em JSON. Responda APENAS com JSON, sem texto extra.
+
+Formato esperado:
+{
+  "cliente": {"nome": "...", "whats": "..."},
+  "pedidos": [
+    {
+      "produto": "...",
+      "valor": 0,
+      "data": "YYYY-MM-DD ou vazio",
+      "ocasiao": "aniversario|dia-das-maes|dia-dos-namorados|natal|casamento|outro ou vazio",
+      "destNome": "nome de quem vai receber ou vazio",
+      "obs": "observações relevantes"
+    }
+  ]
+}
+
+Conversa:
+${texto.slice(0,3000)}`}]
+      })
+    });
+    const data=await resp.json();
+    const txt=data.content?.[0]?.text||'{}';
+    const json=JSON.parse(txt.replace(/```json|```/g,'').trim());
+    renderImportPreview(json);
+  }catch(e){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">⚠️</div><p>Erro ao analisar. Tente novamente.</p></div>`;
+  }
+}
+
+function renderImportPreview(json){
+  const el=document.getElementById('import-resultado');
+  if(!json.cliente&&!json.pedidos?.length){el.innerHTML=`<div class="empty"><p>Não foi possível identificar dados na conversa.</p></div>`;return;}
+  let html=`<div style="background:var(--verde-bg);border:1px solid var(--verde-claro);border-radius:10px;padding:1rem;margin-bottom:.75rem">
+    <div style="font-weight:500;font-size:13px;margin-bottom:.5rem">✅ Dados identificados:</div>`;
+  if(json.cliente?.nome)html+=`<div style="font-size:13px;margin-bottom:.25rem">👤 <strong>${json.cliente.nome}</strong>${json.cliente.whats?' · '+json.cliente.whats:''}</div>`;
+  if(json.pedidos?.length)json.pedidos.forEach((p,i)=>{html+=`<div style="font-size:13px;margin-top:.35rem;padding:.4rem .6rem;background:var(--branco);border-radius:6px">🌸 ${p.produto||'Produto'}${p.valor?' · R$'+p.valor:''}${p.data?' · '+exibeData(p.data):''}${p.destNome?' → '+p.destNome:''}</div>`;});
+  html+=`</div>
+  <button class="btn-save" style="width:100%" onclick="confirmarImportWhatsApp(${JSON.stringify(json).replace(/"/g,'&quot;')})">✅ Importar estes dados</button>`;
+  el.innerHTML=html;
+}
+
+async function confirmarImportWhatsApp(json){
+  const el=document.getElementById('import-resultado');
+  el.innerHTML=`<div class="empty"><p>Importando...</p></div>`;
+  try{
+    // Verifica se cliente já existe
+    let cliId=null;
+    if(json.cliente?.whats){
+      const digits=json.cliente.whats.replace(/\D/g,'');
+      const existente=clientes.find(c=>c.whats?.replace(/\D/g,'')===digits);
+      if(existente)cliId=existente.id;
+    }
+    if(!cliId&&json.cliente?.nome){
+      const existente=clientes.find(c=>c.nome?.toLowerCase()===json.cliente.nome.toLowerCase());
+      if(existente)cliId=existente.id;
+    }
+    // Cria cliente se não existir
+    if(!cliId&&json.cliente?.nome){
+      const ref=await db.collection('clientes').add({nome:json.cliente.nome,whats:json.cliente.whats||'',tag:'novo',criado:new Date().toISOString(),atualizado:new Date().toISOString()});
+      cliId=ref.id;
+    }
+    // Importa pedidos
+    if(cliId&&json.pedidos?.length){
+      for(const p of json.pedidos){
+        await db.collection('clientes').doc(cliId).collection('pedidos').add({produto:p.produto||'',valor:p.valor||0,entrega:0,data:p.data||'',dataConfirmacao:p.data||'',status:'finalizado-ok',ocasiao:p.ocasiao||'',destNome:p.destNome||'',obs:p.obs||'',criado:new Date().toISOString(),atualizado:new Date().toISOString()});
+      }
+      delete pedidosPorCliente[cliId];
+      const peds=await getPedidos(cliId);
+      await db.collection('clientes').doc(cliId).update({totalPedidos:peds.filter(p=>p.status?.startsWith('finalizado')).length,tag:calcularPerfil(peds.length)});
+    }
+    el.innerHTML=`<div style="background:var(--verde-bg);border:1px solid var(--verde-claro);border-radius:10px;padding:.85rem;font-size:13px;color:var(--verde);font-weight:500">✅ Importado com sucesso! ${json.pedidos?.length||0} pedido(s) cadastrado(s).</div>`;
+    document.getElementById('import-texto').value='';
+  }catch(e){el.innerHTML=`<div class="empty"><div class="empty-icon">⚠️</div><p>Erro ao importar: ${e.message}</p></div>`;}
+}
+
+// ── IMPORTAR CSV CONTATOS ─────────────────────────────
+function importarCSV(input){
+  const file=input.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const linhas=e.target.result.split('\n').filter(l=>l.trim());
+    if(!linhas.length)return;
+    const headers=linhas[0].split(',').map(h=>h.replace(/"/g,'').trim().toLowerCase());
+    const contatos=linhas.slice(1).map(linha=>{
+      const cols=linha.match(/(".*?"|[^,]+)/g)||[];
+      const obj={};
+      headers.forEach((h,i)=>{obj[h]=(cols[i]||'').replace(/"/g,'').trim();});
+      return obj;
+    }).filter(c=>c['name']||c['given name']);
+    renderCSVPreview(contatos);
+  };
+  reader.readAsText(file,'UTF-8');
+}
+
+function renderCSVPreview(contatos){
+  const el=document.getElementById('import-csv-resultado');
+  const comTel=contatos.filter(c=>c['phone 1 - value']||c['phone 2 - value']);
+  el.innerHTML=`<div style="background:var(--azul-bg);border:1px solid #c5d8f0;border-radius:10px;padding:.85rem;margin-bottom:.75rem">
+    <div style="font-size:13px;font-weight:500;margin-bottom:.35rem">📋 ${contatos.length} contatos encontrados (${comTel.length} com telefone)</div>
+    <div style="font-size:12px;color:var(--cinza)">Serão importados apenas os que têm nome. Telefone quando disponível.</div>
+  </div>
+  <button class="btn-save" style="width:100%" onclick="confirmarImportCSV(${JSON.stringify(contatos.slice(0,200)).replace(/"/g,'&quot;')})">✅ Importar ${Math.min(contatos.length,200)} contatos</button>`;
+}
+
+async function confirmarImportCSV(contatos){
+  const el=document.getElementById('import-csv-resultado');
+  el.innerHTML=`<div class="empty"><p>Importando ${contatos.length} contatos...</p></div>`;
+  let importados=0,ignorados=0;
+  for(const c of contatos){
+    const nome=(c['name']||c['given name']||'').trim();
+    if(!nome){ignorados++;continue;}
+    const tel=(c['phone 1 - value']||c['phone 2 - value']||'').replace(/\D/g,'');
+    // Verifica duplicata
+    const existe=clientes.find(cl=>cl.nome?.toLowerCase()===nome.toLowerCase()||(tel&&cl.whats?.replace(/\D/g,'')===tel));
+    if(existe){ignorados++;continue;}
+    await db.collection('clientes').add({nome,whats:tel?`(${tel.slice(0,2)}) ${tel.slice(2,7)}-${tel.slice(7)}`:'',tag:'novo',criado:new Date().toISOString(),atualizado:new Date().toISOString()});
+    importados++;
+  }
+  el.innerHTML=`<div style="background:var(--verde-bg);border:1px solid var(--verde-claro);border-radius:10px;padding:.85rem;font-size:13px;color:var(--verde);font-weight:500">✅ ${importados} contatos importados! ${ignorados} ignorados (duplicados ou sem nome).</div>`;
+}
+
+
 function renderCadastro(tipo){
-  const icons={produto:'🌸',bairro:'📍',rua:'🛣️'};
+  const icons={produto:'🌸',bairro:'📍',rua:'🛣️',ocasiao:'🎉'};
   const el=document.getElementById('list-'+tipo);if(!el)return;
-  el.innerHTML=cadastros[tipo].length?cadastros[tipo].map(v=>`<div class="cadastro-item">${icons[tipo]} ${v}<button class="btn-remove" onclick="removeCadastro('${tipo}','${v.replace(/'/g,"\\'")}')">×</button></div>`).join(''):`<div style="font-size:13px;color:var(--muted);padding:.5rem 0">Nenhum cadastrado ainda.</div>`;
+  el.innerHTML=cadastros[tipo].length?cadastros[tipo].map(v=>`<div class="cadastro-item">${icons[tipo]||'📌'} ${v}<button class="btn-remove" onclick="removeCadastro('${tipo}','${v.replace(/'/g,"\\'")}')">×</button></div>`).join(''):`<div style="font-size:13px;color:var(--muted);padding:.5rem 0">Nenhum cadastrado ainda.</div>`;
 }
 function addCadastro(tipo){const input=document.getElementById('inp-'+tipo);const nome=input.value.trim();if(!nome)return;if(cadastros[tipo].map(v=>v.toLowerCase()).includes(nome.toLowerCase())){alert('Já cadastrado.');return;}db.collection('config').doc(tipo+'s').set({lista:[...cadastros[tipo],nome].sort()}).then(()=>{input.value='';input.focus();}).catch(e=>alert('Erro: '+e.message));}
 function removeCadastro(tipo,nome){if(!confirm(`Remover "${nome}"?`))return;db.collection('config').doc(tipo+'s').set({lista:cadastros[tipo].filter(v=>v!==nome)}).catch(e=>alert('Erro: '+e.message));}
