@@ -1353,6 +1353,7 @@ function fecharModalPedido(){
   fechar('modal-pedido');
 }
 
+async function salvarPedido(){
   const cliId=document.getElementById('fp-cli-id').value;
   // Coleta itens
   const itensEls = document.querySelectorAll('.pedido-item-row');
