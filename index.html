@@ -663,13 +663,6 @@ function sair(){
   }
 }
 
-// Verifica se já está logado
-if(sessionStorage.getItem('auth')==='ok'){
-  document.getElementById('login-screen').style.display='none';
-  document.getElementById('app-content').style.display='block';
-  iniciarApp();
-}
-
 let appIniciado=false;
 function iniciarApp(){
   if(appIniciado)return;
@@ -685,6 +678,13 @@ let clientes=[],pedidosPorCliente={},clienteAtualId=null,filtrados=[];
 let cadastros={produto:[],bairro:[],rua:[],ocasiao:[]};
 let custosProdutos={};
 let vinculoDestino=null;
+
+// Verifica se já está logado
+if(sessionStorage.getItem('auth')==='ok'){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app-content').style.display='block';
+  iniciarApp();
+}
 
 function inicializarListeners(){
 db.collection('clientes').orderBy('nome').onSnapshot(snap=>{
