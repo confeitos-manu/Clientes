@@ -809,12 +809,30 @@ function converteAniver(s){
   return s;
 }
 
-// Carrega pedidos em lotes para não sobrecarregar o Firebase
+// Carrega todos os pedidos de uma vez (1 consulta) em vez de cliente por cliente
 async function getPedidosTodos(){
   const semCache=clientes.filter(c=>!pedidosPorCliente[c.id]);
-  const LOTE=5;
-  for(let i=0;i<semCache.length;i+=LOTE){
-    await Promise.all(semCache.slice(i,i+LOTE).map(c=>getPedidos(c.id)));
+  if(!semCache.length)return;
+  try{
+    const timeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('Tempo esgotado.')),15000));
+    const snap=await Promise.race([db.collectionGroup('pedidos').get(),timeout]);
+    const porCliente={};
+    snap.docs.forEach(d=>{
+      const cliId=d.ref.parent.parent.id;
+      (porCliente[cliId]=porCliente[cliId]||[]).push({id:d.id,...d.data()});
+    });
+    clientes.forEach(c=>{
+      if(!pedidosPorCliente[c.id]){
+        pedidosPorCliente[c.id]=(porCliente[c.id]||[]).sort((a,b)=>(b.data||'').localeCompare(a.data||''));
+      }
+    });
+  }catch(e){
+    // Fallback: se a consulta em grupo falhar (ex: permissão do Firestore), volta ao modo antigo em lotes
+    console.warn('collectionGroup falhou, usando modo antigo:',e.message);
+    const LOTE=5;
+    for(let i=0;i<semCache.length;i+=LOTE){
+      await Promise.all(semCache.slice(i,i+LOTE).map(c=>getPedidos(c.id)));
+    }
   }
 }
 
