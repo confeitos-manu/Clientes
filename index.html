@@ -636,6 +636,103 @@ firebase.initializeApp({apiKey:"AIzaSyBbZqLD7Ht6J-48LavV_IO9rKsIieJczlU",authDom
 const db=firebase.firestore();
 const auth=firebase.auth();
 
+// ── INTEGRAÇÃO COM O SITE DE PRECIFICAÇÃO (Supabase) ──────────────
+// Quando um pedido é finalizado aqui, isso registra a venda lá também,
+// sem precisar lançar duas vezes. Cole a MESMA chave publishable que
+// você usou no index.html do site de Precificação.
+const PRECIFICACAO_SUPABASE_URL = "https://jhjchfesrxnpbabhylxs.supabase.co";
+const PRECIFICACAO_ANON_KEY = "sb_publishable_cz83j5R_8j0yUaWFhFVMuw_m_QqfCoi";
+
+function precifPrimeiroDiaMesISO(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
+}
+
+async function precificacaoFetch(path, options={}){
+  if(!PRECIFICACAO_ANON_KEY || PRECIFICACAO_ANON_KEY.indexOf('COLE_SUA') === 0) return null;
+  try{
+    const res = await fetch(`${PRECIFICACAO_SUPABASE_URL}/rest/v1/${path}`, {
+      ...options,
+      headers: {
+        'apikey': PRECIFICACAO_ANON_KEY,
+        'Authorization': `Bearer ${PRECIFICACAO_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': options.prefer || 'return=representation',
+        ...(options.headers||{})
+      }
+    });
+    if(!res.ok){ console.error('Precificação: erro', res.status, await res.text()); return null; }
+    const text = await res.text();
+    return text ? JSON.parse(text) : [];
+  }catch(e){ console.error('Precificação: falha de conexão', e); return null; }
+}
+
+// Procura o produto cadastrado no site de Precificação (por nome) e calcula
+// o custo total dele agora, usando a mesma fórmula do site (materiais +
+// mão de obra + rateio da loja pelos minutos de produção).
+async function precifCalcularCustoProduto(nomeProduto){
+  const produtos = await precificacaoFetch(`produtos?ativo=eq.true&nome=ilike.${encodeURIComponent(nomeProduto)}&select=*`);
+  if(!produtos || !produtos.length) return null;
+  const produto = produtos[0];
+
+  const [insumos, custosArr, perdas] = await Promise.all([
+    precificacaoFetch('insumos?select=*'),
+    precificacaoFetch('custos_fixos?id=eq.1&select=*'),
+    precificacaoFetch(`perdas?data=gte.${precifPrimeiroDiaMesISO()}&select=valor`)
+  ]);
+  const custos = custosArr && custosArr[0];
+  if(!custos) return null;
+  const perdasMes = (perdas||[]).reduce((s,p)=>s+(p.valor||0),0);
+
+  const totalFixos = custos.aluguel+custos.energia+custos.agua+custos.internet+custos.funcionarios+custos.sistemas+custos.outros+perdasMes;
+  const minutosMes = (custos.horas_dia||0)*(custos.dias_semana||0)*4.33*60;
+  const rateioLoja = minutosMes>0 ? (totalFixos/minutosMes)*(produto.minutos_producao||0) : 0;
+  const custoMaoDeObra = minutosMes>0 ? ((custos.salario_mensal||0)/minutosMes)*(produto.minutos_producao||0) : 0;
+  const custoMateriais = (produto.materiais||[]).reduce((s,m)=>{
+    if(m.fixo && m.insumo_id){
+      const ins = (insumos||[]).find(i=>i.id===m.insumo_id);
+      const preco = ins ? ins.preco : m.valor_unitario;
+      return s + preco*(m.quantidade||0);
+    }
+    return s + (m.fixo ? m.valor_unitario*(m.quantidade||0) : (m.valor_unitario||0));
+  }, 0);
+  return { produtoId: produto.id, custoTotal: custoMateriais + custoMaoDeObra + rateioLoja };
+}
+
+// Registra uma venda no site de Precificação. Se não achar o produto
+// cadastrado lá pelo nome, registra mesmo assim com custo R$0 (você
+// consegue ajustar depois na aba Vendas do site de Precificação).
+async function precifRegistrarVenda(produtoNome, valor, dataISO){
+  if(!PRECIFICACAO_ANON_KEY || PRECIFICACAO_ANON_KEY.indexOf('COLE_SUA') === 0) return;
+  if(!produtoNome || !(valor > 0)) return;
+  try{
+    const match = await precifCalcularCustoProduto(produtoNome);
+    const custoUnitario = match ? match.custoTotal : 0;
+    const margemUnitaria = valor - custoUnitario;
+    await precificacaoFetch('vendas', {
+      method:'POST',
+      prefer:'return=minimal',
+      body: JSON.stringify({
+        data: dataISO || new Date().toISOString().slice(0,10),
+        produto_id: match ? match.produtoId : null,
+        produto_nome: produtoNome,
+        quantidade: 1,
+        preco_unitario: valor,
+        custo_unitario: custoUnitario,
+        margem_contribuicao_unitaria: margemUnitaria,
+        margem_contribuicao_total: margemUnitaria
+      })
+    });
+  }catch(e){ console.error('Precificação: falha ao registrar venda', e); }
+}
+
+// Um pedido pode ter vários itens — registra uma venda pra cada.
+async function precifRegistrarVendasDoPedido(itens, dataISO){
+  for(const it of (itens||[])){
+    await precifRegistrarVenda(it.produto, it.valor, dataISO);
+  }
+}
+
 // ── AUTH SIMPLES ──────────────────────────────────────
 const SENHA_APP = 'confeitos2025';
 
@@ -1395,6 +1492,9 @@ async function salvarPedido(){
   const col=db.collection('clientes').doc(cliId).collection('pedidos');
   const prom=pedidoId?col.doc(pedidoId).update(dados):(dados.criado=new Date().toISOString(),col.add(dados));
   await prom;
+  if(!pedidoId && status.startsWith('finalizado')){
+    precifRegistrarVendasDoPedido(itens, dados.data); // manda pro site de Precificação, sem travar a tela
+  }
   delete pedidosPorCliente[cliId];
   const peds=await getPedidos(cliId);
   const total=peds.filter(p=>p.status?.startsWith('finalizado')).length;
@@ -1485,6 +1585,7 @@ async function salvarPedidoRapido(cliId){
   if(produto)autoSalvarCadastro('produto',produto);
   if(dados.destBairro)autoSalvarCadastro('bairro',dados.destBairro);
   await db.collection('clientes').doc(cliId).collection('pedidos').add(dados);
+  precifRegistrarVenda(dados.produto, dados.valor, dados.data); // manda pro site de Precificação, sem travar a tela
   delete pedidosPorCliente[cliId];
   const peds=await getPedidos(cliId);
   const total=peds.filter(p=>p.status?.startsWith('finalizado')).length;
