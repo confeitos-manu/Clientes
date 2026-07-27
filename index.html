@@ -1414,6 +1414,10 @@ function calcTotalItens(){
 }
 
 
+function toggleCancelado(status){
+  const campo = document.getElementById('campo-retido');
+  if(campo) campo.style.display = (status==='cancelado') ? '' : 'none';
+}
 function abrirFormPedido(cliId,pedido=null){
   document.getElementById('fp-cli-id').value=cliId;
   document.getElementById('fp-ped-id').value=pedido?.id||'';
