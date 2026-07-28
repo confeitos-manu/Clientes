@@ -533,17 +533,19 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
       </div>
       <div id="campos-aniversario" style="display:none;background:var(--rosa-bg);border:1px solid #e8c4be;border-radius:10px;padding:.85rem;margin-bottom:1rem">
         <div style="font-size:12px;font-weight:600;color:var(--rosa);margin-bottom:.65rem;text-transform:uppercase;letter-spacing:.4px">🎂 Aniversariante</div>
-        <div class="frow">
-          <div class="fs" style="margin-bottom:0"><label>Nome</label><input type="text" id="fp-aniv-nome" placeholder="Ex: Ana Lima"></div>
-          <div class="fs" style="margin-bottom:0"><label>Data de aniversário</label><input type="date" id="fp-aniv-data"></div>
+        <div class="fs" style="margin-bottom:.5rem">
+          <label>Buscar cliente</label>
+          <input type="text" id="fp-aniv-busca" placeholder="Digite o nome do aniversariante..." oninput="buscarAniversariante(this.value)" autocomplete="off">
+          <input type="hidden" id="fp-aniv-id">
+          <div id="fp-aniv-resultado" style="margin-top:.35rem"></div>
         </div>
+        <div class="fs" style="margin-bottom:0"><label>Nome (se não for cliente)</label><input type="text" id="fp-aniv-nome" placeholder="Ex: Ana Lima"></div>
+        <div class="fs" style="margin-bottom:0"><label>Data de aniversário</label><input type="date" id="fp-aniv-data"></div>
       </div>
       <div class="fs"><label>Enviado por</label><input type="text" id="fp-remetente" placeholder="Ex: João e Maria (se mais de um)"></div>
       <div class="section-title">Destinatário</div>
-      <div class="frow">
-        <div class="fs"><label>Nome de quem recebeu</label><input type="text" id="fp-dest-nome" placeholder="Ex: Ana Lima"></div>
-        <div class="fs"><label>Telefone</label><input type="text" id="fp-dest-tel" placeholder="(49) 99999-9999"></div>
-      </div>
+      <div class="fs"><label>Nome de quem recebeu</label><input type="text" id="fp-dest-nome" placeholder="Ex: Ana Lima"></div>
+      <input type="hidden" id="fp-dest-tel" value="">
       <div class="fs"><label>Logradouro</label><input type="text" id="fp-dest-logradouro" list="lista-ruas" autocomplete="off" placeholder="Rua..."></div>
       <div class="frow3">
         <div class="fs"><label>Número</label><input type="text" id="fp-dest-numero" placeholder="123"></div>
@@ -581,6 +583,40 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
         <button class="btn-cancel" onclick="fechar('modal-vinculo')">Cancelar</button>
         <button class="btn-save" onclick="salvarVinculo()">Salvar vínculo</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR RECEBIMENTO -->
+<div class="overlay" id="modal-recebimento" style="display:none">
+  <div class="modal">
+    <div class="modal-head"><h2>✏️ Editar presente recebido</h2><button class="btn-x" onclick="fechar('modal-recebimento')">×</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="rec-cli-id">
+      <input type="hidden" id="rec-idx">
+      <div class="fs"><label>Produto</label><input type="text" id="rec-produto" placeholder="Ex: Buquê de rosas"></div>
+      <div class="frow">
+        <div class="fs"><label>Valor (R$)</label><input type="number" id="rec-valor" min="0" step="0.01" placeholder="0,00"></div>
+        <div class="fs"><label>Data</label><input type="date" id="rec-data"></div>
+      </div>
+      <div class="fs"><label>De quem</label><input type="text" id="rec-dequem" placeholder="Nome de quem enviou"></div>
+      <div class="fs"><label>Ocasião</label>
+        <select id="rec-ocasiao">
+          <option value="">Não informada</option>
+          <option value="aniversario">Aniversário</option>
+          <option value="dia-das-maes">Dia das Mães</option>
+          <option value="dia-dos-namorados">Dia dos Namorados</option>
+          <option value="natal">Natal</option>
+          <option value="casamento">Casamento</option>
+          <option value="formatura">Formatura</option>
+          <option value="dia-dos-pais">Dia dos Pais</option>
+          <option value="outro">Outro</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="fechar('modal-recebimento')">Cancelar</button>
+      <button class="btn-save" onclick="salvarRecebimento()">Salvar</button>
     </div>
   </div>
 </div>
@@ -636,103 +672,6 @@ firebase.initializeApp({apiKey:"AIzaSyBbZqLD7Ht6J-48LavV_IO9rKsIieJczlU",authDom
 const db=firebase.firestore();
 const auth=firebase.auth();
 
-// ── INTEGRAÇÃO COM O SITE DE PRECIFICAÇÃO (Supabase) ──────────────
-// Quando um pedido é finalizado aqui, isso registra a venda lá também,
-// sem precisar lançar duas vezes. Cole a MESMA chave publishable que
-// você usou no index.html do site de Precificação.
-const PRECIFICACAO_SUPABASE_URL = "https://jhjchfesrxnpbabhylxs.supabase.co";
-const PRECIFICACAO_ANON_KEY = "sb_publishable_cz83j5R_8j0yUaWFhFVMuw_m_QqfCoi";
-
-function precifPrimeiroDiaMesISO(){
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
-}
-
-async function precificacaoFetch(path, options={}){
-  if(!PRECIFICACAO_ANON_KEY || PRECIFICACAO_ANON_KEY.indexOf('COLE_SUA') === 0) return null;
-  try{
-    const res = await fetch(`${PRECIFICACAO_SUPABASE_URL}/rest/v1/${path}`, {
-      ...options,
-      headers: {
-        'apikey': PRECIFICACAO_ANON_KEY,
-        'Authorization': `Bearer ${PRECIFICACAO_ANON_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': options.prefer || 'return=representation',
-        ...(options.headers||{})
-      }
-    });
-    if(!res.ok){ console.error('Precificação: erro', res.status, await res.text()); return null; }
-    const text = await res.text();
-    return text ? JSON.parse(text) : [];
-  }catch(e){ console.error('Precificação: falha de conexão', e); return null; }
-}
-
-// Procura o produto cadastrado no site de Precificação (por nome) e calcula
-// o custo total dele agora, usando a mesma fórmula do site (materiais +
-// mão de obra + rateio da loja pelos minutos de produção).
-async function precifCalcularCustoProduto(nomeProduto){
-  const produtos = await precificacaoFetch(`produtos?ativo=eq.true&nome=ilike.${encodeURIComponent(nomeProduto)}&select=*`);
-  if(!produtos || !produtos.length) return null;
-  const produto = produtos[0];
-
-  const [insumos, custosArr, perdas] = await Promise.all([
-    precificacaoFetch('insumos?select=*'),
-    precificacaoFetch('custos_fixos?id=eq.1&select=*'),
-    precificacaoFetch(`perdas?data=gte.${precifPrimeiroDiaMesISO()}&select=valor`)
-  ]);
-  const custos = custosArr && custosArr[0];
-  if(!custos) return null;
-  const perdasMes = (perdas||[]).reduce((s,p)=>s+(p.valor||0),0);
-
-  const totalFixos = custos.aluguel+custos.energia+custos.agua+custos.internet+custos.funcionarios+custos.sistemas+custos.outros+perdasMes;
-  const minutosMes = (custos.horas_dia||0)*(custos.dias_semana||0)*4.33*60;
-  const rateioLoja = minutosMes>0 ? (totalFixos/minutosMes)*(produto.minutos_producao||0) : 0;
-  const custoMaoDeObra = minutosMes>0 ? ((custos.salario_mensal||0)/minutosMes)*(produto.minutos_producao||0) : 0;
-  const custoMateriais = (produto.materiais||[]).reduce((s,m)=>{
-    if(m.fixo && m.insumo_id){
-      const ins = (insumos||[]).find(i=>i.id===m.insumo_id);
-      const preco = ins ? ins.preco : m.valor_unitario;
-      return s + preco*(m.quantidade||0);
-    }
-    return s + (m.fixo ? m.valor_unitario*(m.quantidade||0) : (m.valor_unitario||0));
-  }, 0);
-  return { produtoId: produto.id, custoTotal: custoMateriais + custoMaoDeObra + rateioLoja };
-}
-
-// Registra uma venda no site de Precificação. Se não achar o produto
-// cadastrado lá pelo nome, registra mesmo assim com custo R$0 (você
-// consegue ajustar depois na aba Vendas do site de Precificação).
-async function precifRegistrarVenda(produtoNome, valor, dataISO){
-  if(!PRECIFICACAO_ANON_KEY || PRECIFICACAO_ANON_KEY.indexOf('COLE_SUA') === 0) return;
-  if(!produtoNome || !(valor > 0)) return;
-  try{
-    const match = await precifCalcularCustoProduto(produtoNome);
-    const custoUnitario = match ? match.custoTotal : 0;
-    const margemUnitaria = valor - custoUnitario;
-    await precificacaoFetch('vendas', {
-      method:'POST',
-      prefer:'return=minimal',
-      body: JSON.stringify({
-        data: dataISO || new Date().toISOString().slice(0,10),
-        produto_id: match ? match.produtoId : null,
-        produto_nome: produtoNome,
-        quantidade: 1,
-        preco_unitario: valor,
-        custo_unitario: custoUnitario,
-        margem_contribuicao_unitaria: margemUnitaria,
-        margem_contribuicao_total: margemUnitaria
-      })
-    });
-  }catch(e){ console.error('Precificação: falha ao registrar venda', e); }
-}
-
-// Um pedido pode ter vários itens — registra uma venda pra cada.
-async function precifRegistrarVendasDoPedido(itens, dataISO){
-  for(const it of (itens||[])){
-    await precifRegistrarVenda(it.produto, it.valor, dataISO);
-  }
-}
-
 // ── AUTH SIMPLES ──────────────────────────────────────
 const SENHA_APP = 'confeitos2025';
 
@@ -760,6 +699,13 @@ function sair(){
   }
 }
 
+// Verifica se já está logado
+if(sessionStorage.getItem('auth')==='ok'){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app-content').style.display='block';
+  iniciarApp();
+}
+
 let appIniciado=false;
 function iniciarApp(){
   if(appIniciado)return;
@@ -775,13 +721,6 @@ let clientes=[],pedidosPorCliente={},clienteAtualId=null,filtrados=[];
 let cadastros={produto:[],bairro:[],rua:[],ocasiao:[]};
 let custosProdutos={};
 let vinculoDestino=null;
-
-// Verifica se já está logado
-if(sessionStorage.getItem('auth')==='ok'){
-  document.getElementById('login-screen').style.display='none';
-  document.getElementById('app-content').style.display='block';
-  iniciarApp();
-}
 
 function inicializarListeners(){
 db.collection('clientes').orderBy('nome').onSnapshot(snap=>{
@@ -849,6 +788,20 @@ function selecionarIndicado(id,nome){
 }
 
 function toggleAniversario(o){document.getElementById('campos-aniversario').style.display=o==='aniversario'?'block':'none';}
+function buscarAniversariante(val){
+  const el=document.getElementById('fp-aniv-resultado');
+  document.getElementById('fp-aniv-id').value='';
+  if(val.length<2){el.innerHTML='';return;}
+  const found=clientes.filter(c=>c.nome?.toLowerCase().includes(val.toLowerCase())).slice(0,5);
+  el.innerHTML=found.length?found.map(c=>`<div onclick="selecionarAniversariante('${c.id}','${c.nome}','${c.aniver||''}')" style="padding:.5rem .75rem;border:1px solid var(--borda);border-radius:8px;margin-bottom:.3rem;cursor:pointer;background:var(--creme);font-size:13px">${c.nome} <span style="color:var(--muted);font-size:11px">${c.whats||''}</span></div>`).join(''):'';
+}
+function selecionarAniversariante(id,nome,aniver){
+  document.getElementById('fp-aniv-id').value=id;
+  document.getElementById('fp-aniv-nome').value=nome;
+  document.getElementById('fp-aniv-busca').value=nome;
+  if(aniver)document.getElementById('fp-aniv-data').value=aniver;
+  document.getElementById('fp-aniv-resultado').innerHTML=`<div style="background:var(--verde-bg);border-radius:8px;padding:.4rem .75rem;font-size:13px;color:var(--verde)">✓ ${nome}</div>`;
+}
 function atualizarDatalist(tipo){const map={produto:'lista-produtos',bairro:'lista-bairros',rua:'lista-ruas'};const dl=document.getElementById(map[tipo]);if(dl)dl.innerHTML=cadastros[tipo].map(v=>`<option value="${v}">`).join('');}
 function autoSalvarCadastro(tipo,valor){if(!valor)return;const lista=cadastros[tipo];if(lista.map(v=>v.toLowerCase()).includes(valor.toLowerCase()))return;db.collection('config').doc(tipo+'s').set({lista:[...lista,valor].sort()});}
 
@@ -906,30 +859,12 @@ function converteAniver(s){
   return s;
 }
 
-// Carrega todos os pedidos de uma vez (1 consulta) em vez de cliente por cliente
+// Carrega pedidos em lotes para não sobrecarregar o Firebase
 async function getPedidosTodos(){
   const semCache=clientes.filter(c=>!pedidosPorCliente[c.id]);
-  if(!semCache.length)return;
-  try{
-    const timeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('Tempo esgotado.')),15000));
-    const snap=await Promise.race([db.collectionGroup('pedidos').get(),timeout]);
-    const porCliente={};
-    snap.docs.forEach(d=>{
-      const cliId=d.ref.parent.parent.id;
-      (porCliente[cliId]=porCliente[cliId]||[]).push({id:d.id,...d.data()});
-    });
-    clientes.forEach(c=>{
-      if(!pedidosPorCliente[c.id]){
-        pedidosPorCliente[c.id]=(porCliente[c.id]||[]).sort((a,b)=>(b.data||'').localeCompare(a.data||''));
-      }
-    });
-  }catch(e){
-    // Fallback: se a consulta em grupo falhar (ex: permissão do Firestore), volta ao modo antigo em lotes
-    console.warn('collectionGroup falhou, usando modo antigo:',e.message);
-    const LOTE=5;
-    for(let i=0;i<semCache.length;i+=LOTE){
-      await Promise.all(semCache.slice(i,i+LOTE).map(c=>getPedidos(c.id)));
-    }
+  const LOTE=5;
+  for(let i=0;i<semCache.length;i+=LOTE){
+    await Promise.all(semCache.slice(i,i+LOTE).map(c=>getPedidos(c.id)));
   }
 }
 
@@ -1273,10 +1208,20 @@ function renderDetalhe(c,peds,vinculos){
   html+=`<button class="btn-add-vinculo" onclick="abrirModalVinculo('${c.id}')">+ Adicionar vínculo</button></div>`;
 
   // RECEBIMENTOS
-  if(nRec>0){
+  // PRESENTES RECEBIDOS — sempre visível
+  {
     const recs=c.recebimentos||[];
-    html+=`<div style="margin-top:1.25rem"><div class="section-title">🎁 Presentes recebidos (${nRec})</div>`;
-    html+=recs.map(r=>`<div class="recebimento-card"><div class="recebimento-head"><span>${r.produto||'Produto'}</span><span style="color:var(--verde)">${fmt(r.valor)}</span></div><div class="recebimento-meta">${r.data?`<span>📅 ${exibeData(r.data)}</span>`:''}${r.ocasiao?`<span>${ocasiaoLabel(r.ocasiao)}</span>`:''}${r.deQuem?`<span>✍️ de ${r.deQuem}</span>`:''}</div></div>`).join('');
+    html+=`<div style="margin-top:1.25rem">
+      <div class="section-title" style="display:flex;justify-content:space-between;align-items:center">
+        🎁 Presentes recebidos (${nRec})
+        ${nRec>0?`<button onclick="limparRecebimentos('${c.id}')" style="font-size:11px;padding:.2rem .5rem;border:1px solid var(--danger);background:none;color:var(--danger);border-radius:6px;cursor:pointer">Limpar todos</button>`:''}
+      </div>`;
+    if(recs.length){
+      html+=recs.map((r,i)=>`<div class="recebimento-card"><div class="recebimento-head"><span>${r.produto||'Produto'}</span><div style="display:flex;align-items:center;gap:.4rem"><span style="color:var(--verde)">${fmt(r.valor)}</span><button onclick="editarRecebimento('${c.id}',${i})" style="background:none;border:1px solid var(--borda);color:var(--cinza);cursor:pointer;font-size:12px;padding:.15rem .4rem;border-radius:5px">✏️</button><button onclick="removerRecebimento('${c.id}',${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;padding:0">×</button></div></div><div class="recebimento-meta">${r.data?`<span>📅 ${exibeData(r.data)}</span>`:''}${r.ocasiao?`<span>${ocasiaoLabel(r.ocasiao)}</span>`:''}${r.deQuem?`<span>✍️ de ${r.deQuem}</span>`:''}</div></div>`).join('');
+    } else {
+      html+=`<p style="font-size:13px;color:var(--muted);padding:.4rem 0">Nenhum presente registrado ainda.</p>`;
+    }
+    html+=`<button class="btn-add-pedido" style="margin-top:.5rem" onclick="editarRecebimento('${c.id}',-1)">+ Adicionar presente</button>`;
     html+='</div>';
   }
 
@@ -1414,10 +1359,6 @@ function calcTotalItens(){
 }
 
 
-function toggleCancelado(status){
-  const campo = document.getElementById('campo-retido');
-  if(campo) campo.style.display = (status==='cancelado') ? '' : 'none';
-}
 function abrirFormPedido(cliId,pedido=null){
   document.getElementById('fp-cli-id').value=cliId;
   document.getElementById('fp-ped-id').value=pedido?.id||'';
@@ -1447,6 +1388,9 @@ function abrirFormPedido(cliId,pedido=null){
   document.getElementById('fp-data-conf').value=pedido?.dataConfirmacao||'';
   document.getElementById('fp-data').value=pedido?.data||'';
   document.getElementById('fp-aniv-nome').value=pedido?.anivNome||'';
+  document.getElementById('fp-aniv-busca').value=pedido?.anivNome||'';
+  document.getElementById('fp-aniv-id').value=pedido?.anivId||'';
+  document.getElementById('fp-aniv-resultado').innerHTML='';
   document.getElementById('fp-aniv-data').value=pedido?.anivData||'';
   if(!pedido?.id&&!pedido?.dataConfirmacao){const hoje=new Date().toISOString().split('T')[0];document.getElementById('fp-data-conf').value=hoje;document.getElementById('fp-data').value=hoje;}
   toggleCancelado(pedido?.status||'finalizado-ok');
@@ -1472,7 +1416,6 @@ function fecharModalPedido(){
   fechar('modal-pedido');
 }
 
-async function salvarPedido(){
   const cliId=document.getElementById('fp-cli-id').value;
   // Coleta itens
   const itensEls = document.querySelectorAll('.pedido-item-row');
@@ -1488,7 +1431,7 @@ async function salvarPedido(){
   const destComp=document.getElementById('fp-dest-complemento').value.trim();
   const destBairro=document.getElementById('fp-dest-bairro').value.trim();
   const status=document.getElementById('fp-status').value;
-  const dados={produto,valor,itens,entrega:parseFloat(document.getElementById('fp-entrega').value)||0,data:document.getElementById('fp-data').value,dataConfirmacao:document.getElementById('fp-data-conf').value,status,valorRetido:status==='cancelado'?(parseFloat(document.getElementById('fp-retido').value)||0):0,ocasiao:document.getElementById('fp-ocasiao').value,anivNome:document.getElementById('fp-ocasiao').value==='aniversario'?document.getElementById('fp-aniv-nome').value.trim():'',anivData:document.getElementById('fp-ocasiao').value==='aniversario'?document.getElementById('fp-aniv-data').value:'',remetente:document.getElementById('fp-remetente').value.trim(),destNome:document.getElementById('fp-dest-nome').value.trim(),destTel:document.getElementById('fp-dest-tel').value.trim(),destLogradouro:destLogr,destNumero:destNum,destComplemento:destComp,destBairro,destEnd:[destLogr,destNum,destComp].filter(Boolean).join(', '),obs:document.getElementById('fp-obs').value.trim(),atualizado:new Date().toISOString()};
+  const dados={produto,valor,itens,entrega:parseFloat(document.getElementById('fp-entrega').value)||0,data:document.getElementById('fp-data').value,dataConfirmacao:document.getElementById('fp-data-conf').value,status,valorRetido:status==='cancelado'?(parseFloat(document.getElementById('fp-retido').value)||0):0,ocasiao:document.getElementById('fp-ocasiao').value,anivNome:document.getElementById('fp-ocasiao').value==='aniversario'?document.getElementById('fp-aniv-nome').value.trim():'',anivId:document.getElementById('fp-ocasiao').value==='aniversario'?document.getElementById('fp-aniv-id').value:'',anivData:document.getElementById('fp-ocasiao').value==='aniversario'?document.getElementById('fp-aniv-data').value:'',remetente:document.getElementById('fp-remetente').value.trim(),destNome:document.getElementById('fp-dest-nome').value.trim(),destTel:document.getElementById('fp-dest-tel').value.trim(),destLogradouro:destLogr,destNumero:destNum,destComplemento:destComp,destBairro,destEnd:[destLogr,destNum,destComp].filter(Boolean).join(', '),obs:document.getElementById('fp-obs').value.trim(),atualizado:new Date().toISOString()};
   itens.forEach(it=>{if(it.produto)autoSalvarCadastro('produto',it.produto);});
   if(destLogr)autoSalvarCadastro('rua',destLogr);
   if(destBairro)autoSalvarCadastro('bairro',destBairro);
@@ -1496,26 +1439,24 @@ async function salvarPedido(){
   const col=db.collection('clientes').doc(cliId).collection('pedidos');
   const prom=pedidoId?col.doc(pedidoId).update(dados):(dados.criado=new Date().toISOString(),col.add(dados));
   await prom;
-  if(!pedidoId && status.startsWith('finalizado')){
-    precifRegistrarVendasDoPedido(itens, dados.data); // manda pro site de Precificação, sem travar a tela
-  }
   delete pedidosPorCliente[cliId];
   const peds=await getPedidos(cliId);
   const total=peds.filter(p=>p.status?.startsWith('finalizado')).length;
   const perfilAuto=calcularPerfil(total);
   const datas_=peds.filter(p=>p.status?.startsWith('finalizado')&&p.data).map(p=>p.data).sort();await db.collection('clientes').doc(cliId).update({totalPedidos:total,tag:perfilAuto,ultimaCompra:datas_[datas_.length-1]||null});
-  // registra recebimento em destinatário
-  if(dados.destNome&&dados.status?.startsWith('finalizado')){
-    const destC=clientes.find(cl=>cl.nome?.toLowerCase()===dados.destNome.toLowerCase()||cl.whats===dados.destTel);
-    if(destC&&destC.id!==cliId){
-      const recInfo={produto:dados.produto,valor:dados.valor,data:dados.data,ocasiao:dados.ocasiao,deQuem:clientes.find(x=>x.id===cliId)?.nome||''};
-      const recAtual=destC.recebimentos||[];
+  // Registra presente recebido no perfil do aniversariante (se for cliente)
+  if(dados.anivId&&dados.anivId!==cliId&&dados.status?.startsWith('finalizado')){
+    const anivC=clientes.find(x=>x.id===dados.anivId);
+    if(anivC){
+      const recInfo={produto:dados.produto,valor:dados.valor,data:dados.data,ocasiao:'aniversario',deQuem:clientes.find(x=>x.id===cliId)?.nome||''};
+      const recAtual=anivC.recebimentos||[];
       if(!recAtual.some(r=>r.produto===recInfo.produto&&r.data===recInfo.data)){
         const novaLista=[...recAtual,recInfo];
-        await db.collection('clientes').doc(destC.id).update({recebimentos:novaLista,totalRecebimentos:novaLista.length});
+        await db.collection('clientes').doc(dados.anivId).update({recebimentos:novaLista,totalRecebimentos:novaLista.length});
       }
     }
   }
+  // Recebimentos automáticos por nome desativados (evita vínculos errados)
   fecharModalPedido();
   sessionStorage.removeItem('rascunho-pedido-'+cliId);
   await verDetalhe(cliId);
@@ -1573,7 +1514,8 @@ function selecionarClienteLanc(cliId){
         <option value="">Não informada</option><option value="aniversario">Aniversário</option><option value="dia-das-mulheres">Dia das Mulheres</option><option value="dia-das-maes">Dia das Mães</option><option value="dia-dos-namorados">Dia dos Namorados</option><option value="natal">Natal</option><option value="casamento">Casamento</option><option value="formatura">Formatura</option><option value="dia-dos-pais">Dia dos Pais</option><option value="pascoa">Páscoa</option><option value="sem-ocasiao">Sem ocasião</option><option value="outro">Outro</option>
       </select>
     </div>
-    <div class="frow"><div class="fs"><label>Para quem vai</label><input type="text" id="lf-dest-nome" placeholder="Nome do destinatário"></div><div class="fs"><label>WhatsApp destinatário</label><input type="text" id="lf-dest-tel" placeholder="(49) 99999-9999"></div></div>
+    <div class="fs"><label>Para quem vai</label><input type="text" id="lf-dest-nome" placeholder="Nome do destinatário"></div>
+    <input type="hidden" id="lf-dest-tel" value="">
     <div class="frow"><div class="fs"><label>Bairro entrega</label><input type="text" id="lf-dest-bairro" list="lista-bairros" autocomplete="off" placeholder="Bairro"></div><div class="fs"><label>Obs rápida</label><input type="text" id="lf-obs" placeholder="Observação..."></div></div>
     <div style="display:flex;gap:.6rem;margin-top:.75rem">
       <button class="btn-cancel" style="flex:none" onclick="resetLancamento()">Cancelar</button>
@@ -1589,26 +1531,67 @@ async function salvarPedidoRapido(cliId){
   if(produto)autoSalvarCadastro('produto',produto);
   if(dados.destBairro)autoSalvarCadastro('bairro',dados.destBairro);
   await db.collection('clientes').doc(cliId).collection('pedidos').add(dados);
-  precifRegistrarVenda(dados.produto, dados.valor, dados.data); // manda pro site de Precificação, sem travar a tela
   delete pedidosPorCliente[cliId];
   const peds=await getPedidos(cliId);
   const total=peds.filter(p=>p.status?.startsWith('finalizado')).length;
   const perfilAuto=calcularPerfil(total);
   const datas_=peds.filter(p=>p.status?.startsWith('finalizado')&&p.data).map(p=>p.data).sort();await db.collection('clientes').doc(cliId).update({totalPedidos:total,tag:perfilAuto,ultimaCompra:datas_[datas_.length-1]||null});
-  if(dados.destNome){
-    const destC=clientes.find(cl=>cl.nome?.toLowerCase()===dados.destNome.toLowerCase());
-    if(destC&&destC.id!==cliId){
-      const recInfo={produto:dados.produto,valor:dados.valor,data:dados.data,ocasiao:dados.ocasiao,deQuem:clientes.find(x=>x.id===cliId)?.nome||''};
-      const recAtual=destC.recebimentos||[];
-      if(!recAtual.some(r=>r.produto===recInfo.produto&&r.data===recInfo.data)){const novaLista=[...recAtual,recInfo];await db.collection('clientes').doc(destC.id).update({recebimentos:novaLista,totalRecebimentos:novaLista.length});}
-    }
-  }
+  // Recebimentos automáticos desativados (evita vínculos errados por nome)
   atualizarStats();renderAlertasMini();resetLancamento();
   document.getElementById('lanc-resultado').innerHTML=`<div style="background:var(--verde-bg);border:1px solid var(--verde-claro);border-radius:10px;padding:.85rem;font-size:13px;color:var(--verde);font-weight:500">✅ Pedido salvo! Busque outro cliente para continuar.</div>`;
   setTimeout(()=>document.getElementById('lanc-whats').focus(),100);
 }
 
-// ── VÍNCULOS ─────────────────────────────────────────
+async function limparRecebimentos(cliId){
+  if(!confirm('Limpar todos os presentes recebidos deste cliente?'))return;
+  await db.collection('clientes').doc(cliId).update({recebimentos:[],totalRecebimentos:0});
+  verDetalhe(cliId);
+}
+async function removerRecebimento(cliId,idx){
+  const c=clientes.find(x=>x.id===cliId);if(!c)return;
+  const recs=[...(c.recebimentos||[])];
+  recs.splice(idx,1);
+  await db.collection('clientes').doc(cliId).update({recebimentos:recs,totalRecebimentos:recs.length});
+  verDetalhe(cliId);
+}
+function editarRecebimento(cliId,idx){
+  const c=clientes.find(x=>x.id===cliId);if(!c)return;
+  document.getElementById('rec-cli-id').value=cliId;
+  document.getElementById('rec-idx').value=idx;
+  if(idx>=0){
+    const r=(c.recebimentos||[])[idx];if(!r)return;
+    document.getElementById('rec-produto').value=r.produto||'';
+    document.getElementById('rec-valor').value=r.valor||'';
+    document.getElementById('rec-data').value=r.data||'';
+    document.getElementById('rec-dequem').value=r.deQuem||'';
+    document.getElementById('rec-ocasiao').value=r.ocasiao||'';
+  } else {
+    document.getElementById('rec-produto').value='';
+    document.getElementById('rec-valor').value='';
+    document.getElementById('rec-data').value=new Date().toISOString().split('T')[0];
+    document.getElementById('rec-dequem').value='';
+    document.getElementById('rec-ocasiao').value='';
+  }
+  document.getElementById('modal-recebimento').style.display='flex';
+}
+async function salvarRecebimento(){
+  const cliId=document.getElementById('rec-cli-id').value;
+  const idx=parseInt(document.getElementById('rec-idx').value);
+  const c=clientes.find(x=>x.id===cliId);if(!c)return;
+  const recs=[...(c.recebimentos||[])];
+  const rec={
+    produto:document.getElementById('rec-produto').value.trim(),
+    valor:parseFloat(document.getElementById('rec-valor').value)||0,
+    data:document.getElementById('rec-data').value,
+    deQuem:document.getElementById('rec-dequem').value.trim(),
+    ocasiao:document.getElementById('rec-ocasiao').value
+  };
+  if(idx>=0){recs[idx]=rec;}else{recs.push(rec);}
+  await db.collection('clientes').doc(cliId).update({recebimentos:recs,totalRecebimentos:recs.length});
+  fechar('modal-recebimento');
+  verDetalhe(cliId);
+}
+
 function abrirModalVinculo(cliId){document.getElementById('fv-cli-id').value=cliId;document.getElementById('fv-busca').value='';document.getElementById('fv-resultado').innerHTML='';document.getElementById('fv-detalhe').value='';vinculoDestino=null;document.getElementById('modal-vinculo').style.display='flex';setTimeout(()=>document.getElementById('fv-busca').focus(),100);}
 function buscarVinculo(val){
   if(val.length<2){document.getElementById('fv-resultado').innerHTML='';return;}
