@@ -699,12 +699,11 @@ function sair(){
   }
 }
 
-// Verifica se já está logado
-if(sessionStorage.getItem('auth')==='ok'){
-  document.getElementById('login-screen').style.display='none';
-  document.getElementById('app-content').style.display='block';
-  iniciarApp();
-}
+// ── STATE ─────────────────────────────────────────────
+let clientes=[],pedidosPorCliente={},clienteAtualId=null,filtrados=[];
+let cadastros={produto:[],bairro:[],rua:[],ocasiao:[]};
+let custosProdutos={};
+let vinculoDestino=null;
 
 let appIniciado=false;
 function iniciarApp(){
@@ -714,13 +713,12 @@ function iniciarApp(){
   inicializarListeners();
 }
 
-
-
-// ── STATE ─────────────────────────────────────────────
-let clientes=[],pedidosPorCliente={},clienteAtualId=null,filtrados=[];
-let cadastros={produto:[],bairro:[],rua:[],ocasiao:[]};
-let custosProdutos={};
-let vinculoDestino=null;
+// Verifica se já está logado — depois de todas as declarações
+if(sessionStorage.getItem('auth')==='ok'){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app-content').style.display='block';
+  iniciarApp();
+}
 
 function inicializarListeners(){
 db.collection('clientes').orderBy('nome').onSnapshot(snap=>{
@@ -788,6 +786,7 @@ function selecionarIndicado(id,nome){
 }
 
 function toggleAniversario(o){document.getElementById('campos-aniversario').style.display=o==='aniversario'?'block':'none';}
+function toggleCancelado(s){document.getElementById('campo-retido').style.display=s==='cancelado'?'block':'none';}
 function buscarAniversariante(val){
   const el=document.getElementById('fp-aniv-resultado');
   document.getElementById('fp-aniv-id').value='';
