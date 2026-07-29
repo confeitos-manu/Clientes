@@ -578,8 +578,16 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
       <div class="fs"><label>Tipo de relação</label>
         <select id="fv-tipo">
           <option value="conjuge">Cônjuge / Namorado(a)</option>
+          <option value="ficante">Ficante</option>
+          <option value="ex">Ex</option>
+          <option value="mae">Mãe</option>
+          <option value="pai">Pai</option>
           <option value="familiar">Familiar</option>
           <option value="amigo">Amigo(a)</option>
+          <option value="colega">Colega</option>
+          <option value="indicacao">Indicação</option>
+          <option value="outro">Outro</option>
+        </select>
           <option value="colega">Colega de trabalho</option>
           <option value="outro">Outro</option>
         </select>
@@ -791,7 +799,7 @@ function atualizarSelectOcasiao(){
   const html=OCASIOES_FIXAS+(extras?`<optgroup label="── Personalizadas ──">${extras}</optgroup>`:'');
   ['fp-ocasiao','lf-ocasiao'].forEach(id=>{const el=document.getElementById(id);if(el){const val=el.value;el.innerHTML=html;el.value=val;}});
 }
-function vinculoLabel(v){return{conjuge:'💑 Cônjuge/Namorado(a)',familiar:'👨‍👩‍👧 Familiar',amigo:'🤝 Amigo(a)',colega:'💼 Colega',indicacao:'🌟 Indicação',outro:'🔗 Outro'}[v]||v;}
+function vinculoLabel(v){return{conjuge:'💑 Cônjuge/Namorado(a)',ficante:'🔥 Ficante',ex:'💔 Ex',mae:'👩 Mãe',pai:'👨 Pai',familiar:'👨‍👩‍👧 Familiar',amigo:'🤝 Amigo(a)',colega:'💼 Colega',indicacao:'🌟 Indicação',outro:'🔗 Outro'}[v]||v;}
 function calcPontos(peds){return Math.floor((peds||[]).filter(p=>(p.status==='finalizado-ok'||p.status==='finalizado-problema')&&(Number(p.valor)||0)>0&&!p.produto?.startsWith('🎁 Resgate')).reduce((s,p)=>s+(Number(p.valor)||0),0)/100);}
 function calcTicket(peds){const r=(peds||[]).filter(p=>(p.status==='finalizado-ok'||p.status==='finalizado-problema')&&(Number(p.valor)||0)>0&&!p.produto?.startsWith('🎁 Resgate'));if(!r.length)return 0;return r.reduce((s,p)=>s+(Number(p.valor)||0),0)/r.length;}
 function toggleIndicacao(val){
@@ -884,8 +892,8 @@ function exibeAniver(aniver){
   if(p.length<3)return'—';
   const meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const dia=parseInt(p[2]);const mes=parseInt(p[1])-1;const ano=parseInt(p[0]);
-  if(!dia||isNaN(mes))return'—';
-  return`${dia} de ${meses[mes]}${ano>0?' de '+ano:''}`;
+  if(!dia||isNaN(mes)||mes<0||mes>11)return'—';
+  return`${dia} de ${meses[mes]}${ano>1?` de ${ano}`:''}`;
 }
 
 function converteAniver(s){
@@ -1333,7 +1341,7 @@ function renderDetalhe(c,peds,vinculos){
           ${p.data?`<span>🚚 ${exibeData(p.data)}</span>`:''}
           ${antec!==null?`<span>⏱ ${antec}d antec.</span>`:''}
           ${p.ocasiao?`<span>${ocasiaoLabel(p.ocasiao)}</span>`:''}
-          ${p.anivNome?`<span>🎂 ${p.anivNome}${p.anivData?' ('+exibeData(p.anivData)+')':''}</span>`:''}
+          ${p.anivNome?`<span>🎂 ${p.anivNome}${p.anivData?' ('+exibeAniver(p.anivData)+')':''}</span>`:''}
           ${p.entrega>0?`<span>🛵 frete ${fmt(p.entrega)}</span>`:''}
           ${p.remetente?`<span>✍️ de ${p.remetente}</span>`:''}
           ${p.destNome?`<span>👤 para ${p.destNome}</span>`:''}
@@ -1683,6 +1691,15 @@ async function salvarVinculo(){
   await db.collection('clientes').doc(cliId).collection('vinculos').add(vinA);
   await db.collection('clientes').doc(vinculoDestino.id).collection('vinculos').add(vinB);
   fechar('modal-vinculo');await verDetalhe(cliId);
+}
+
+async function removerVinculo(cliId,vinId,idVinculado){
+  if(!confirm('Remover este vínculo?'))return;
+  await db.collection('clientes').doc(cliId).collection('vinculos').doc(vinId).delete();
+  // Remove o vínculo do outro lado também
+  const outroSnap=await db.collection('clientes').doc(idVinculado).collection('vinculos').where('idVinculado','==',cliId).get();
+  outroSnap.forEach(doc=>doc.ref.delete());
+  verDetalhe(cliId);
 }
 function resgatar(cliId,nome,pts){
   document.getElementById('resgate-cli-id').value=cliId;
