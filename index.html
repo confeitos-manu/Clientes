@@ -810,6 +810,7 @@ function capitalizarNome(s){
   ).join(' ');
 }
 
+function toggleIndicacao(val){
   document.getElementById('campo-indicacao').style.display=val==='indicacao'?'block':'none';
   if(val!=='indicacao'){document.getElementById('fc-indicado-id').value='';document.getElementById('fc-indicado-busca').value='';}
 }
