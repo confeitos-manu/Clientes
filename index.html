@@ -406,7 +406,7 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
     <div class="modal-body">
       <input type="hidden" id="fc-id">
       <div class="section-title">Dados pessoais</div>
-      <div class="fs"><label>Nome completo *</label><input type="text" id="fc-nome" placeholder="Ex: Maria Silva"></div>
+      <div class="fs"><label>Nome completo *</label><input type="text" id="fc-nome" placeholder="Ex: Maria Silva" onblur="this.value=capitalizarNome(this.value)"></div>
       <div class="frow">
         <div class="fs"><label>CPF</label><input type="text" id="fc-cpf" placeholder="000.000.000-00"></div>
         <div class="fs"><label>Aniversário</label>
@@ -802,7 +802,14 @@ function atualizarSelectOcasiao(){
 function vinculoLabel(v){return{conjuge:'💑 Cônjuge/Namorado(a)',ficante:'🔥 Ficante',ex:'💔 Ex',mae:'👩 Mãe',pai:'👨 Pai',familiar:'👨‍👩‍👧 Familiar',amigo:'🤝 Amigo(a)',colega:'💼 Colega',indicacao:'🌟 Indicação',outro:'🔗 Outro'}[v]||v;}
 function calcPontos(peds){return Math.floor((peds||[]).filter(p=>(p.status==='finalizado-ok'||p.status==='finalizado-problema')&&(Number(p.valor)||0)>0&&!p.produto?.startsWith('🎁 Resgate')).reduce((s,p)=>s+(Number(p.valor)||0),0)/100);}
 function calcTicket(peds){const r=(peds||[]).filter(p=>(p.status==='finalizado-ok'||p.status==='finalizado-problema')&&(Number(p.valor)||0)>0&&!p.produto?.startsWith('🎁 Resgate'));if(!r.length)return 0;return r.reduce((s,p)=>s+(Number(p.valor)||0),0)/r.length;}
-function toggleIndicacao(val){
+function capitalizarNome(s){
+  if(!s)return'';
+  const excecoes=['de','da','do','das','dos','e','em','na','no','nas','nos','a','o'];
+  return s.trim().toLowerCase().split(' ').map((p,i)=>
+    p.length>0?(i===0||!excecoes.includes(p)?p[0].toUpperCase()+p.slice(1):p):''
+  ).join(' ');
+}
+
   document.getElementById('campo-indicacao').style.display=val==='indicacao'?'block':'none';
   if(val!=='indicacao'){document.getElementById('fc-indicado-id').value='';document.getElementById('fc-indicado-busca').value='';}
 }
@@ -1376,7 +1383,7 @@ function abrirFormCliente(c=null){
   setTimeout(()=>document.getElementById('fc-nome').focus(),100);
 }
 function salvarCliente(){
-  const nome=document.getElementById('fc-nome').value.trim();
+  const nome=capitalizarNome(document.getElementById('fc-nome').value.trim());
   if(!nome){alert('Informe o nome.');return;}
   const logr=document.getElementById('fc-logradouro').value.trim();
   const num=document.getElementById('fc-numero').value.trim();
