@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Confeitos · Clientes</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌿</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -527,8 +528,21 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
           <input type="hidden" id="fp-aniv-id">
           <div id="fp-aniv-resultado" style="margin-top:.35rem"></div>
         </div>
-        <div class="fs" style="margin-bottom:0"><label>Nome (se não for cliente)</label><input type="text" id="fp-aniv-nome" placeholder="Ex: Ana Lima"></div>
-        <div class="fs" style="margin-bottom:0"><label>Data de aniversário</label><input type="date" id="fp-aniv-data"></div>
+        <div class="fs" style="margin-bottom:.5rem"><label>Nome (se não for cliente)</label><input type="text" id="fp-aniv-nome" placeholder="Ex: Ana Lima"></div>
+        <div class="fs" style="margin-bottom:0">
+          <label>Data de aniversário (opcional)</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+            <select id="fp-aniv-dia" style="border:1px solid var(--borda);border-radius:8px;padding:.6rem .5rem;font-size:14px;font-family:'Inter',sans-serif;outline:none;background:var(--creme)">
+              <option value="">Dia</option>
+              <option value="">Dia</option><option value="01">1</option><option value="02">2</option><option value="03">3</option><option value="04">4</option><option value="05">5</option><option value="06">6</option><option value="07">7</option><option value="08">8</option><option value="09">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option><option value="31">31</option>
+            </select>
+            <select id="fp-aniv-mes" style="border:1px solid var(--borda);border-radius:8px;padding:.6rem .5rem;font-size:14px;font-family:'Inter',sans-serif;outline:none;background:var(--creme)">
+              <option value="">Mês</option>
+              <option value="">Mês</option><option value="01">Janeiro</option><option value="02">Fevereiro</option><option value="03">Março</option><option value="04">Abril</option><option value="05">Maio</option><option value="06">Junho</option><option value="07">Julho</option><option value="08">Agosto</option><option value="09">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+            </select>
+          </div>
+        </div>
+        <input type="hidden" id="fp-aniv-data">
       </div>
       <div class="fs"><label>Enviado por</label><input type="text" id="fp-remetente" placeholder="Ex: João e Maria (se mais de um)"></div>
       <div class="section-title">Destinatário</div>
@@ -822,7 +836,12 @@ function selecionarAniversariante(id,nome,aniver){
   document.getElementById('fp-aniv-id').value=id;
   document.getElementById('fp-aniv-nome').value=nome;
   document.getElementById('fp-aniv-busca').value=nome;
-  if(aniver)document.getElementById('fp-aniv-data').value=aniver;
+  if(aniver){
+    const p=aniver.split('-');
+    document.getElementById('fp-aniv-dia').value=p[2]||'';
+    document.getElementById('fp-aniv-mes').value=p[1]||'';
+    document.getElementById('fp-aniv-data').value=aniver;
+  }
   document.getElementById('fp-aniv-resultado').innerHTML=`<div style="background:var(--verde-bg);border-radius:8px;padding:.4rem .75rem;font-size:13px;color:var(--verde)">✓ ${nome}</div>`;
 }
 function atualizarDatalist(tipo){const map={produto:'lista-produtos',bairro:'lista-bairros',rua:'lista-ruas'};const dl=document.getElementById(map[tipo]);if(dl)dl.innerHTML=cadastros[tipo].map(v=>`<option value="${v}">`).join('');}
@@ -1463,7 +1482,12 @@ function abrirFormPedido(cliId,pedido=null){
   document.getElementById('fp-aniv-busca').value=pedido?.anivNome||'';
   document.getElementById('fp-aniv-id').value=pedido?.anivId||'';
   document.getElementById('fp-aniv-resultado').innerHTML='';
-  document.getElementById('fp-aniv-data').value=pedido?.anivData||'';
+  // Preenche dia e mês do aniversário
+  const anivData=pedido?.anivData||'';
+  const anivParts=anivData.split('-');
+  document.getElementById('fp-aniv-dia').value=anivParts[2]||'';
+  document.getElementById('fp-aniv-mes').value=anivParts[1]||'';
+  document.getElementById('fp-aniv-data').value=anivData;
   if(!pedido?.id&&!pedido?.dataConfirmacao){const hoje=new Date().toISOString().split('T')[0];document.getElementById('fp-data-conf').value=hoje;document.getElementById('fp-data').value=hoje;}
   toggleCancelado(pedido?.status||'finalizado-ok');
   toggleAniversario(pedido?.ocasiao||'');
@@ -1504,7 +1528,11 @@ async function salvarPedido(){
   const destComp=document.getElementById('fp-dest-complemento').value.trim();
   const destBairro=document.getElementById('fp-dest-bairro').value.trim();
   const status=document.getElementById('fp-status').value;
-  const destId=document.getElementById('fp-dest-id')?.value||'';
+  // Monta anivData a partir dos selects de dia/mês
+  const anivDia=document.getElementById('fp-aniv-dia')?.value||'';
+  const anivMes=document.getElementById('fp-aniv-mes')?.value||'';
+  const anivDataCalc=anivDia&&anivMes?`0000-${anivMes}-${anivDia}`:'';
+  document.getElementById('fp-aniv-data').value=anivDataCalc;
   const dados={produto,valor,itens,entrega:parseFloat(document.getElementById('fp-entrega')?.value)||0,data:document.getElementById('fp-data')?.value||'',dataConfirmacao:document.getElementById('fp-data-conf')?.value||'',status,valorRetido:status==='cancelado'?(parseFloat(document.getElementById('fp-retido')?.value)||0):0,ocasiao:document.getElementById('fp-ocasiao')?.value||'',anivNome:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-nome')?.value.trim()||''):'',anivId:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-id')?.value||''):'',anivData:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-data')?.value||''):'',remetente:document.getElementById('fp-remetente')?.value.trim()||'',destNome:document.getElementById('fp-dest-nome')?.value.trim()||'',destId,destTel:document.getElementById('fp-dest-tel')?.value?.trim()||'',destLogradouro:destLogr,destNumero:destNum,destComplemento:destComp,destBairro,destEnd:[destLogr,destNum,destComp].filter(Boolean).join(', '),obs:document.getElementById('fp-obs')?.value.trim()||'',atualizado:new Date().toISOString()};
   itens.forEach(it=>{if(it.produto)autoSalvarCadastro('produto',it.produto);});
   if(destLogr)autoSalvarCadastro('rua',destLogr);
@@ -1524,10 +1552,26 @@ async function salvarPedido(){
     if(anivC){
       const recInfo={produto:dados.produto,valor:dados.valor,data:dados.data,ocasiao:'aniversario',deQuem:clientes.find(x=>x.id===cliId)?.nome||''};
       const recAtual=anivC.recebimentos||[];
+      const updates={};
       if(!recAtual.some(r=>r.produto===recInfo.produto&&r.data===recInfo.data)){
         const novaLista=[...recAtual,recInfo];
-        await db.collection('clientes').doc(dados.anivId).update({recebimentos:novaLista,totalRecebimentos:novaLista.length});
+        updates.recebimentos=novaLista;
+        updates.totalRecebimentos=novaLista.length;
       }
+      // Atualiza data de aniversário se informada
+      if(dados.anivData){
+        if(anivC.aniver&&anivC.aniver!==dados.anivData){
+          const meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+          const p=dados.anivData.split('-');
+          const dataFmt=`${parseInt(p[2])} de ${meses[parseInt(p[1])-1]}`;
+          if(confirm(`${anivC.nome} já tem aniversário cadastrado. Deseja atualizar para ${dataFmt}?`)){
+            updates.aniver=dados.anivData;
+          }
+        } else if(!anivC.aniver){
+          updates.aniver=dados.anivData;
+        }
+      }
+      if(Object.keys(updates).length)await db.collection('clientes').doc(dados.anivId).update(updates);
     }
   }
   // Registra presente recebido no perfil do destinatário (se for cliente)
@@ -1560,7 +1604,40 @@ async function excluirPedido(cliId,pedidoId){
 }
 
 // ── LANÇAMENTO RÁPIDO ─────────────────────────────────
-// ── RESGATAR ─────────────────────────────────────────
+// ── VÍNCULOS ─────────────────────────────────────────
+function abrirModalVinculo(cliId){
+  document.getElementById('fv-cli-id').value=cliId;
+  document.getElementById('fv-busca').value='';
+  document.getElementById('fv-resultado').innerHTML='';
+  document.getElementById('fv-detalhe').value='';
+  vinculoDestino=null;
+  document.getElementById('modal-vinculo').style.display='flex';
+  setTimeout(()=>document.getElementById('fv-busca').focus(),100);
+}
+function buscarVinculo(val){
+  const el=document.getElementById('fv-resultado');
+  if(val.length<2){el.innerHTML='';return;}
+  const cliId=document.getElementById('fv-cli-id').value;
+  const found=clientes.filter(c=>c.id!==cliId&&c.nome?.toLowerCase().includes(val.toLowerCase())).slice(0,5);
+  el.innerHTML=found.map(c=>`<div onclick="selecionarVinculo('${c.id}','${c.nome}')" style="padding:.5rem .75rem;border:1px solid var(--borda);border-radius:8px;margin-bottom:.3rem;cursor:pointer;background:var(--creme);font-size:13px">${c.nome} <span style="color:var(--muted);font-size:11px">${c.whats||''}</span></div>`).join('');
+}
+function selecionarVinculo(id,nome){
+  vinculoDestino={id,nome};
+  document.getElementById('fv-busca').value=nome;
+  document.getElementById('fv-resultado').innerHTML=`<div style="background:var(--verde-bg);border-radius:8px;padding:.4rem .75rem;font-size:13px;color:var(--verde)">✓ ${nome}</div>`;
+}
+async function salvarVinculo(){
+  const cliId=document.getElementById('fv-cli-id').value;
+  const tipo=document.getElementById('fv-tipo').value;
+  const detalhe=document.getElementById('fv-detalhe').value.trim();
+  if(!vinculoDestino){alert('Selecione um cliente.');return;}
+  const c=clientes.find(x=>x.id===cliId);
+  const vinA={idVinculado:vinculoDestino.id,nomeVinculado:vinculoDestino.nome,tipo,detalhe,criado:new Date().toISOString()};
+  const vinB={idVinculado:cliId,nomeVinculado:c?.nome||'',tipo,detalhe,criado:new Date().toISOString()};
+  await db.collection('clientes').doc(cliId).collection('vinculos').add(vinA);
+  await db.collection('clientes').doc(vinculoDestino.id).collection('vinculos').add(vinB);
+  fechar('modal-vinculo');await verDetalhe(cliId);
+}
 function resgatar(cliId,nome,pts){
   document.getElementById('resgate-cli-id').value=cliId;
   document.getElementById('resgate-nome-label').textContent=nome;
