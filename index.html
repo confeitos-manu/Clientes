@@ -262,7 +262,7 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
   <div class="nav-item" onclick="mudarAba('resumo',this)">📊 Resumo</div>
   <div class="nav-item" onclick="mudarAba('pontos',this)">⭐ Pontos</div>
   <div class="nav-item" onclick="mudarAba('cadastros',this)">⚙️</div>
-  <div class="nav-item" onclick="mudarAba('importar',this)">📥 Importar</div>
+  <div class="nav-item" style="display:none" onclick="mudarAba('importar',this)">📥 Importar</div>
 </div>
 <div class="main">
 
@@ -325,8 +325,8 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
       <div id="datas-ano-passado"></div>
     </div>
     <div class="resumo-card">
-      <div class="section-header"><h3>🔄 Sugestão "reordenar igual"</h3></div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:.75rem">Clientes que compraram em uma data comemorativa no ano passado que se repete este ano.</p>
+      <div class="section-header"><h3>💐 Pode querer repetir a compra</h3></div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:.75rem">Clientes que compraram nesta mesma época no ano passado. Vale mandar mensagem antes da data! O botão já abre um pedido novo com os mesmos itens.</p>
       <div id="datas-reordenar"></div>
     </div>
     <div class="resumo-card">
@@ -475,6 +475,17 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
 </div>
 
 <!-- MODAL PEDIDO -->
+<!-- MODAL CATÁLOGO -->
+<div class="overlay" id="modal-catalogo" style="display:none;z-index:1200">
+  <div class="modal">
+    <div class="modal-head"><h2>🌸 Catálogo</h2><button class="btn-x" onclick="fechar('modal-catalogo')">×</button></div>
+    <div class="modal-body">
+      <input type="text" id="cat-busca" placeholder="Buscar por nome ou código..." autocomplete="off" oninput="renderListaCatalogo()" style="width:100%;border:1px solid var(--borda);border-radius:8px;padding:.65rem .75rem;font-size:14px;font-family:'Inter',sans-serif;outline:none;background:var(--creme);margin-bottom:.75rem">
+      <div id="cat-lista"></div>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="modal-pedido" style="display:none">
   <div class="modal">
     <div class="modal-head"><h2 id="modal-ped-titulo">Novo pedido</h2><button class="btn-x" onclick="fecharModalPedido()">×</button></div>
@@ -483,7 +494,10 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
       <input type="hidden" id="fp-ped-id">
       <div class="section-title">Produto e valores</div>
       <div id="fp-itens-container"></div>
-      <button type="button" onclick="addItemPedido()" style="width:100%;background:var(--verde-bg);color:var(--verde);border:1px dashed var(--verde-claro);border-radius:8px;padding:.55rem;font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;margin-bottom:.75rem">+ Adicionar item</button>
+      <div style="display:flex;gap:.5rem;margin-bottom:.75rem">
+        <button type="button" onclick="abrirModalCatalogo()" style="flex:2;background:var(--dourado-bg);color:#8a6a30;border:1px solid #e0c9a0;border-radius:8px;padding:.55rem;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">🌸 Buscar no catálogo</button>
+        <button type="button" onclick="addItemPedido()" style="flex:1;background:var(--verde-bg);color:var(--verde);border:1px dashed var(--verde-claro);border-radius:8px;padding:.55rem;font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif">+ Manual</button>
+      </div>
       <div style="display:flex;justify-content:space-between;align-items:center;background:var(--creme2);border-radius:8px;padding:.6rem .9rem;margin-bottom:.75rem">
         <span style="font-size:13px;font-weight:500;color:var(--cinza)">Total produtos</span>
         <span style="font-size:15px;font-weight:600;color:var(--verde)" id="fp-total-label">R$ 0,00</span>
@@ -744,6 +758,7 @@ function iniciarApp(){
   appIniciado=true;
   document.getElementById('data-hoje').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
   inicializarListeners();
+  carregarCatalogo();
 }
 
 // Verifica se já está logado — depois de todas as declarações
@@ -1428,6 +1443,81 @@ function salvarCliente(){
 function excluirCliente(id){if(!confirm('Excluir este cliente?'))return;db.collection('clientes').doc(id).delete().then(()=>{delete pedidosPorCliente[id];fechar('modal-detalhe');clienteAtualId=null;});}
 
 // ── ITENS DO PEDIDO ───────────────────────────────────
+// ── CATÁLOGO (Supabase — mesmo banco do Catálogo/Comanda) ────────────
+const CAT_URL='https://jhjchfesrxnpbabhylxs.supabase.co';
+const CAT_KEY='sb_publishable_cz83j5R_8j0yUaWFhFVMuw_m_QqfCoi';
+let catalogo=[];
+
+async function carregarCatalogo(){
+  try{
+    const res=await fetch(CAT_URL+'/rest/v1/catalogo?select=cod,nome,preco,img,status&order=nome.asc&limit=500',{
+      headers:{'apikey':CAT_KEY,'Authorization':'Bearer '+CAT_KEY}
+    });
+    if(!res.ok)throw new Error('falha');
+    const dados=await res.json();
+    catalogo=(dados||[]).map(p=>({cod:p.cod||'',nome:p.nome||'',preco:parseFloat(p.preco)||0,img:p.img||'',status:p.status||''}));
+    if(catalogo.length){try{localStorage.setItem('cat_clientes',JSON.stringify(catalogo));}catch(e){}}
+  }catch(e){
+    // Sem internet ou erro: usa a última cópia salva no aparelho
+    try{const c=localStorage.getItem('cat_clientes');if(c)catalogo=JSON.parse(c);}catch(e2){}
+  }
+}
+
+function abrirModalCatalogo(){
+  document.getElementById('cat-busca').value='';
+  document.getElementById('modal-catalogo').style.display='flex';
+  renderListaCatalogo();
+  if(!catalogo.length)carregarCatalogo().then(renderListaCatalogo);
+  setTimeout(()=>document.getElementById('cat-busca').focus(),100);
+}
+
+function renderListaCatalogo(){
+  const el=document.getElementById('cat-lista');
+  if(!el)return;
+  if(!catalogo.length){
+    el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:1rem 0;text-align:center">Carregando catálogo...<br><br>Se não aparecer nada, confira sua internet. Você ainda pode lançar no botão <strong>+ Manual</strong>.</div>';
+    return;
+  }
+  const b=(document.getElementById('cat-busca').value||'').toLowerCase().trim();
+  const lista=catalogo.filter(p=>!b||p.nome.toLowerCase().includes(b)||p.cod.toLowerCase().includes(b));
+  if(!lista.length){
+    el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:1rem 0;text-align:center">Nenhum produto encontrado.<br><br>Feche aqui e use <strong>+ Manual</strong> para digitar.</div>';
+    return;
+  }
+  el.innerHTML=lista.map(p=>{
+    const idx=catalogo.indexOf(p);
+    const img=p.img?`<img src="${p.img}" style="width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0">`:`<div style="width:44px;height:44px;border-radius:8px;background:var(--dourado-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0">🌸</div>`;
+    const cod=p.cod?`<span style="font-size:10px;color:var(--muted)">#${p.cod}</span> `:'';
+    return`<div onclick="addDoCatalogo(${idx})" style="display:flex;gap:.65rem;align-items:center;padding:.6rem;border:1px solid var(--borda);border-radius:10px;margin-bottom:.4rem;cursor:pointer;background:var(--branco)">
+      ${img}
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:500;line-height:1.3">${cod}${p.nome}</div>
+        <div style="font-size:13px;color:var(--verde);font-weight:600;margin-top:.15rem">${fmt(p.preco)}</div>
+      </div>
+      <div style="font-size:11px;color:var(--verde);font-weight:600;flex-shrink:0">Adicionar</div>
+    </div>`;
+  }).join('');
+}
+
+function addDoCatalogo(idx){
+  const p=catalogo[idx];
+  if(!p)return;
+  const container=document.getElementById('fp-itens-container');
+  // Se a primeira linha estiver vazia, preenche ela em vez de criar outra
+  const primeira=container.querySelector('.pedido-item-row');
+  const vazia=primeira&&!primeira.querySelector('.item-produto').value.trim();
+  if(vazia){
+    primeira.querySelector('.item-produto').value=p.nome;
+    primeira.querySelector('.item-valor').value=p.preco||'';
+  }else{
+    const div=document.createElement('div');
+    div.innerHTML=itemRowHTML({produto:p.nome,valor:p.preco||''},container.children.length);
+    container.appendChild(div.firstChild);
+  }
+  calcTotalItens();
+  fechar('modal-catalogo');
+}
+
 function renderItensPedido(itens){
   const container = document.getElementById('fp-itens-container');
   container.innerHTML = itens.map((item,i)=>itemRowHTML(item,i)).join('');
@@ -1465,6 +1555,11 @@ function calcTotalItens(){
 
 
 function abrirFormPedido(cliId,pedido=null){
+  // Sempre para o rascunho anterior antes de abrir qualquer formulário.
+  // Sem isso, o timer de um cliente continua rodando e grava os dados
+  // digitados para OUTRO cliente no rascunho do cliente antigo.
+  clearInterval(window._rascunhoTimer);
+  window._rascunhoTimer=null;
   document.getElementById('fp-cli-id').value=cliId;
   document.getElementById('fp-ped-id').value=pedido?.id||'';
   document.getElementById('modal-ped-titulo').textContent=pedido?.id?'Editar pedido':'Novo pedido';
@@ -1510,14 +1605,19 @@ function abrirFormPedido(cliId,pedido=null){
   atualizarSelectOcasiao();
   document.getElementById('modal-pedido').style.display='flex';
 
-  // Auto-salva rascunho a cada mudança (só pedidos novos)
-  if(!pedido?.id||!document.getElementById('fp-ped-id').value){
-    clearInterval(window._rascunhoTimer);
+  // Auto-salva rascunho (só pedidos novos, nunca ao editar)
+  if(!document.getElementById('fp-ped-id').value){
+    window._rascunhoCliId=cliId;
     window._rascunhoTimer=setInterval(()=>salvarRascunho(cliId),3000);
   }
 }
 
 function salvarRascunho(cliId){
+  // Trava de segurança: só grava se o formulário aberto ainda for deste cliente
+  // e se for um pedido NOVO (nunca durante uma edição).
+  if(document.getElementById('fp-cli-id')?.value!==cliId)return;
+  if(document.getElementById('fp-ped-id')?.value)return;
+  if(document.getElementById('modal-pedido')?.style.display!=='flex')return;
   const itensEls=document.querySelectorAll('.pedido-item-row');
   const itens=Array.from(itensEls).map(row=>({produto:row.querySelector('.item-produto').value.trim(),valor:parseFloat(row.querySelector('.item-valor').value)||0})).filter(i=>i.produto);
   const rascunho={itens,entrega:parseFloat(document.getElementById('fp-entrega')?.value)||0,data:document.getElementById('fp-data')?.value||'',dataConfirmacao:document.getElementById('fp-data-conf')?.value||'',status:document.getElementById('fp-status')?.value||'',ocasiao:document.getElementById('fp-ocasiao')?.value||'',obs:document.getElementById('fp-obs')?.value.trim()||'',destNome:document.getElementById('fp-dest-nome')?.value.trim()||'',destTel:document.getElementById('fp-dest-tel')?.value?.trim()||'',destBairro:document.getElementById('fp-dest-bairro')?.value.trim()||'',remetente:document.getElementById('fp-remetente')?.value.trim()||''};
@@ -1525,10 +1625,20 @@ function salvarRascunho(cliId){
 }
 function fecharModalPedido(){
   clearInterval(window._rascunhoTimer);
+  window._rascunhoTimer=null;
+  window._rascunhoCliId=null;
   fechar('modal-pedido');
 }
 
 async function salvarPedido(){
+  // Trava contra clique duplo / toque repetido → evita pedido duplicado
+  if(window._salvandoPedido)return;
+  window._salvandoPedido=true;
+  const _btnSalvar=document.querySelector('#modal-pedido .btn-save');
+  const _txtBtn=_btnSalvar?_btnSalvar.textContent:'';
+  if(_btnSalvar){_btnSalvar.disabled=true;_btnSalvar.style.opacity='.6';_btnSalvar.textContent='Salvando...';}
+  const _liberar=()=>{window._salvandoPedido=false;if(_btnSalvar){_btnSalvar.disabled=false;_btnSalvar.style.opacity='';_btnSalvar.textContent=_txtBtn;}};
+  try{
   const cliId=document.getElementById('fp-cli-id').value;
   // Coleta itens
   const itensEls = document.querySelectorAll('.pedido-item-row');
@@ -1536,7 +1646,7 @@ async function salvarPedido(){
     produto: row.querySelector('.item-produto').value.trim(),
     valor: parseFloat(row.querySelector('.item-valor').value)||0
   })).filter(i=>i.produto);
-  if(!itens.length){alert('Informe pelo menos um produto.');return;}
+  if(!itens.length){alert('Informe pelo menos um produto.');_liberar();return;}
   const produto = itens.map(i=>i.produto).join(', ');
   const valor = itens.reduce((s,i)=>s+i.valor,0);
   const destLogr=document.getElementById('fp-dest-logradouro').value.trim();
@@ -1607,6 +1717,11 @@ async function salvarPedido(){
   sessionStorage.removeItem('rascunho-pedido-'+cliId);
   await verDetalhe(cliId);
   atualizarStats();renderAlertasMini();
+  }catch(e){
+    alert('Erro ao salvar o pedido: '+e.message+'\n\nNada foi perdido — tente salvar de novo.');
+  }finally{
+    _liberar();
+  }
 }
 async function editarPedido(cliId,pedidoId){const peds=await getPedidos(cliId);const p=peds.find(x=>x.id===pedidoId);if(p)abrirFormPedido(cliId,p);}
 async function excluirPedido(cliId,pedidoId){
