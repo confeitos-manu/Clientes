@@ -324,9 +324,8 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
       <p style="font-size:12px;color:var(--muted);margin-bottom:.75rem">Clientes que compraram nos últimos 30 dias do ano passado — hora de contatar!</p>
       <div id="datas-ano-passado"></div>
     </div>
-    <div class="resumo-card">
+    <div class="resumo-card" style="display:none">
       <div class="section-header"><h3>💐 Pode querer repetir a compra</h3></div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:.75rem">Clientes que compraram nesta mesma época no ano passado. Vale mandar mensagem antes da data! O botão já abre um pedido novo com os mesmos itens.</p>
       <div id="datas-reordenar"></div>
     </div>
     <div class="resumo-card">
@@ -573,6 +572,13 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
         <div class="fs"><label>Bairro</label><input type="text" id="fp-dest-bairro" list="lista-bairros" autocomplete="off" placeholder="Centro"></div>
       </div>
       <div class="fs"><label>Observações</label><textarea id="fp-obs" placeholder="Detalhes especiais, recados..."></textarea></div>
+      <div class="fs">
+        <label>Foto do pedido</label>
+        <input type="hidden" id="fp-foto">
+        <div id="fp-foto-preview" style="margin-bottom:.5rem"></div>
+        <input type="file" id="fp-foto-input" accept="image/*" style="display:none" onchange="processarFotoPedido(this)">
+        <button type="button" id="fp-foto-btn" onclick="document.getElementById('fp-foto-input').click()" style="width:100%;background:var(--creme2);color:var(--cinza);border:1px dashed var(--borda);border-radius:8px;padding:.6rem;font-size:13px;cursor:pointer;font-family:'Inter',sans-serif">📷 Escolher foto</button>
+      </div>
       <div class="form-actions">
         <button class="btn-cancel" onclick="fecharModalPedido()">Cancelar</button>
         <button class="btn-save" onclick="salvarPedido()">Salvar pedido</button>
@@ -756,7 +762,7 @@ let appIniciado=false;
 function iniciarApp(){
   if(appIniciado)return;
   appIniciado=true;
-  document.getElementById('data-hoje').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})+' · v4';
+  document.getElementById('data-hoje').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})+' · v7';
   inicializarListeners();
   carregarCatalogo();
 }
@@ -811,10 +817,77 @@ function syncDataEntrega(){
   }
 }
 // Se a Manu mexer na entrega, ela para de acompanhar a confirmação
+// ── FOTO DO PEDIDO ────────────────────────────────────────────────
+// A foto é encolhida antes de salvar. Sem isso, uma foto do celular
+// (3-8 MB) não caberia no banco — o limite por pedido é 1 MB.
+function processarFotoPedido(input){
+  const file=input.files&&input.files[0];
+  if(!file)return;
+  const btn=document.getElementById('fp-foto-btn');
+  btn.textContent='Processando...';btn.disabled=true;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const img=new Image();
+    img.onload=()=>{
+      const MAX=900;
+      let w=img.width,h=img.height;
+      if(w>h&&w>MAX){h=Math.round(h*MAX/w);w=MAX;}
+      else if(h>=w&&h>MAX){w=Math.round(w*MAX/h);h=MAX;}
+      const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+      cv.getContext('2d').drawImage(img,0,0,w,h);
+      let q=0.72,dados=cv.toDataURL('image/jpeg',q);
+      // Se ainda estiver grande, comprime mais até caber com folga
+      while(dados.length>700000&&q>0.35){q-=0.12;dados=cv.toDataURL('image/jpeg',q);}
+      document.getElementById('fp-foto').value=dados;
+      renderPreviewFoto();
+      btn.textContent='📷 Trocar foto';btn.disabled=false;
+      input.value='';
+    };
+    img.onerror=()=>{alert('Não consegui ler essa imagem. Tente outra foto.');btn.textContent='📷 Escolher foto';btn.disabled=false;input.value='';};
+    img.src=ev.target.result;
+  };
+  reader.onerror=()=>{alert('Erro ao abrir o arquivo.');btn.textContent='📷 Escolher foto';btn.disabled=false;input.value='';};
+  reader.readAsDataURL(file);
+}
+
+function renderPreviewFoto(){
+  const v=document.getElementById('fp-foto').value;
+  const el=document.getElementById('fp-foto-preview');
+  const btn=document.getElementById('fp-foto-btn');
+  if(!v){el.innerHTML='';if(btn)btn.textContent='📷 Escolher foto';return;}
+  el.innerHTML=`<div style="position:relative;display:inline-block">
+    <img src="${v}" style="max-width:100%;max-height:180px;border-radius:10px;border:1px solid var(--borda);display:block">
+    <button type="button" onclick="removerFotoPedido()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:26px;height:26px;font-size:15px;cursor:pointer;line-height:1">×</button>
+  </div>`;
+  if(btn)btn.textContent='📷 Trocar foto';
+}
+
+function removerFotoPedido(){
+  document.getElementById('fp-foto').value='';
+  renderPreviewFoto();
+}
+
+function abrirFotoGrande(src){
+  const o=document.createElement('div');
+  o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:2000;display:flex;align-items:center;justify-content:center;padding:1rem;cursor:zoom-out';
+  o.innerHTML=`<img src="${src}" style="max-width:100%;max-height:100%;border-radius:8px">`;
+  o.onclick=()=>o.remove();
+  document.body.appendChild(o);
+}
+
 function marcarEntregaManual(){document.getElementById('fp-data').dataset.auto='';}
 function dataParaISO(s){if(!s)return'';const p=s.split('/');if(p.length!==3)return'';const a=p[2].length===2?'20'+p[2]:p[2];return`${a}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;}
 function ISOparaData(s){if(!s)return'';const p=s.split('-');if(p.length!==3)return s.includes('/')?s:'';return`${p[2]}/${p[1]}/${p[0].slice(2)}`;}
-function exibeData(s){if(!s)return'';const iso=s.includes('/')?dataParaISO(s):s;if(!iso)return'';return new Date(iso+'T12:00').toLocaleDateString('pt-BR');}
+const MESES_ABREV=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+function exibeData(s){
+  if(!s)return'';
+  const iso=s.includes('/')?dataParaISO(s):s;
+  if(!iso)return'';
+  const d=new Date(iso+'T12:00');
+  if(isNaN(d))return'';
+  const dia=String(d.getDate()).padStart(2,'0');
+  return dia+'/'+MESES_ABREV[d.getMonth()]+'/'+d.getFullYear();
+}
 function diasParaHoje(isoDate){if(!isoDate)return null;return Math.round((new Date(isoDate+'T12:00')-new Date())/(1000*60*60*24));}
 function ocasiaoLabel(o){
   if(cadastros.ocasiao?.includes(o))return'🎉 '+o;
@@ -1357,10 +1430,6 @@ function renderDetalhe(c,peds,vinculos){
   // PEDIDOS
   html+=`<div style="margin-top:1.25rem"><div class="section-title">Pedidos (${nReais})</div><button class="btn-add-pedido" onclick="abrirFormPedido('${c.id}')">+ Adicionar pedido</button>`;
   if(peds.length){
-    // Botão reordenar se tiver pedido do ano passado no mesmo mês
-    const hoje=new Date();
-    const pedAnoPassado=peds.find(p=>p.status?.startsWith('finalizado')&&p.data&&new Date(p.data+'T12:00').getFullYear()===hoje.getFullYear()-1&&new Date(p.data+'T12:00').getMonth()===hoje.getMonth());
-    if(pedAnoPassado)html+=`<button class="reorder-btn" onclick="reordenarPedido('${c.id}','${pedAnoPassado.id}')">🔄 Reordenar igual ao ano passado (${pedAnoPassado.produto})</button>`;
     html+=peds.map(p=>{
       const total=(Number(p.valor)||0)+(Number(p.entrega)||0);
       const antec=p.dataConfirmacao&&p.data?Math.round((new Date(p.data+'T12:00')-new Date(p.dataConfirmacao+'T12:00'))/(1000*60*60*24)):null;
@@ -1371,6 +1440,7 @@ function renderDetalhe(c,peds,vinculos){
         <span class="pedido-status status-${p.status||'finalizado-ok'}">${{'finalizado-ok':'✅ Ok','finalizado-problema':'⚠️ Problema','cancelado':'❌ Cancelado'}[p.status]||'Ok'}</span></div></div>
         ${p.itens?.length>1?`<div style="margin:.35rem 0;padding:.4rem .6rem;background:var(--branco);border-radius:6px;font-size:12px">${p.itens.map(it=>`<div style="display:flex;justify-content:space-between;padding:.15rem 0;border-bottom:1px solid var(--borda)"><span>${it.produto}</span><span style="color:var(--verde);font-weight:500">${fmt(it.valor)}</span></div>`).join('')}</div>`:''}
         ${isCan&&p.valorRetido>0?`<div style="font-size:12px;color:var(--danger);font-weight:500;margin-bottom:.3rem">💰 Retido: ${fmt(p.valorRetido)}</div>`:''}
+        ${p.foto?`<img src="${p.foto}" onclick="abrirFotoGrande(this.src)" style="width:100%;max-height:200px;object-fit:cover;border-radius:8px;margin:.35rem 0;cursor:zoom-in;border:1px solid var(--borda)">`:''}
         <div class="pedido-meta">
           ${p.dataConfirmacao?`<span>📋 ${exibeData(p.dataConfirmacao)}</span>`:''}
           ${p.data?`<span>🚚 ${exibeData(p.data)}</span>`:''}
@@ -1601,6 +1671,8 @@ function abrirFormPedido(cliId,pedido=null){
   document.getElementById('fp-retido').value=pedido?.valorRetido||'';
   document.getElementById('fp-data-conf').value=pedido?.dataConfirmacao||'';
   document.getElementById('fp-data').value=pedido?.data||'';
+  document.getElementById('fp-foto').value=pedido?.foto||'';
+  renderPreviewFoto();
   // Ao editar um pedido que já tem entrega, ela não acompanha mais a confirmação
   document.getElementById('fp-data').dataset.auto=pedido?.data?'':'1';
   document.getElementById('fp-aniv-nome').value=pedido?.anivNome||'';
@@ -1614,7 +1686,14 @@ function abrirFormPedido(cliId,pedido=null){
   document.getElementById('fp-aniv-mes').value=anivParts[1]||'';
   document.getElementById('fp-aniv-data').value=anivData;
   if(!pedido?.id&&!pedido?.dataConfirmacao){const hoje=new Date().toISOString().split('T')[0];document.getElementById('fp-data-conf').value=hoje;document.getElementById('fp-data').value=hoje;document.getElementById('fp-data').dataset.auto='1';}
-  toggleCancelado(pedido?.status||'finalizado-ok');
+  // O status precisa ser preenchido explicitamente. Sem isso o campo
+  // guardava o valor do pedido anterior, ou ficava vazio quando o pedido
+  // tinha um status antigo que não existe mais na lista.
+  const selSt=document.getElementById('fp-status');
+  const stDesejado=pedido?.status||'finalizado-ok';
+  const stValido=[...selSt.options].some(o=>o.value===stDesejado)?stDesejado:'finalizado-ok';
+  selSt.value=stValido;
+  toggleCancelado(stValido);
   toggleAniversario(pedido?.ocasiao||'');
   atualizarSelectOcasiao();
   document.getElementById('modal-pedido').style.display='flex';
@@ -1674,7 +1753,7 @@ async function salvarPedido(){
   const anivDataCalc=anivDia&&anivMes?`0000-${anivMes}-${anivDia}`:'';
   document.getElementById('fp-aniv-data').value=anivDataCalc;
   const destId=document.getElementById('fp-dest-id')?.value||'';
-  const dados={produto,valor,itens,entrega:parseFloat(document.getElementById('fp-entrega')?.value)||0,data:document.getElementById('fp-data')?.value||'',dataConfirmacao:document.getElementById('fp-data-conf')?.value||'',status,valorRetido:status==='cancelado'?(parseFloat(document.getElementById('fp-retido')?.value)||0):0,ocasiao:document.getElementById('fp-ocasiao')?.value||'',anivNome:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-nome')?.value.trim()||''):'',anivId:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-id')?.value||''):'',anivData:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-data')?.value||''):'',remetente:document.getElementById('fp-remetente')?.value.trim()||'',destNome:document.getElementById('fp-dest-nome')?.value.trim()||'',destId,destTel:document.getElementById('fp-dest-tel')?.value?.trim()||'',destLogradouro:destLogr,destNumero:destNum,destComplemento:destComp,destBairro,destEnd:[destLogr,destNum,destComp].filter(Boolean).join(', '),obs:document.getElementById('fp-obs')?.value.trim()||'',atualizado:new Date().toISOString()};
+  const dados={produto,valor,itens,entrega:parseFloat(document.getElementById('fp-entrega')?.value)||0,data:document.getElementById('fp-data')?.value||'',dataConfirmacao:document.getElementById('fp-data-conf')?.value||'',status,valorRetido:status==='cancelado'?(parseFloat(document.getElementById('fp-retido')?.value)||0):0,ocasiao:document.getElementById('fp-ocasiao')?.value||'',anivNome:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-nome')?.value.trim()||''):'',anivId:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-id')?.value||''):'',anivData:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-data')?.value||''):'',remetente:document.getElementById('fp-remetente')?.value.trim()||'',destNome:document.getElementById('fp-dest-nome')?.value.trim()||'',destId,destTel:document.getElementById('fp-dest-tel')?.value?.trim()||'',destLogradouro:destLogr,destNumero:destNum,destComplemento:destComp,destBairro,destEnd:[destLogr,destNum,destComp].filter(Boolean).join(', '),obs:document.getElementById('fp-obs')?.value.trim()||'',foto:document.getElementById('fp-foto')?.value||'',atualizado:new Date().toISOString()};
   itens.forEach(it=>{if(it.produto)autoSalvarCadastro('produto',it.produto);});
   if(destLogr)autoSalvarCadastro('rua',destLogr);
   if(destBairro)autoSalvarCadastro('bairro',destBairro);
