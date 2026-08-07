@@ -320,6 +320,12 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
 <div id="aba-datas" style="display:none">
   <div class="resumo-pad">
     <div class="resumo-card">
+      <div class="section-header"><h3>🔍 Pedidos sem ocasião marcada</h3></div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:.75rem">Procura pedidos antigos cuja entrega caiu perto de uma data comemorativa mas ficaram sem ocasião.</p>
+      <button type="button" onclick="varrerOcasioes()" style="width:100%;background:var(--dourado-bg);color:#8a6a30;border:1px solid #e0c9a0;border-radius:8px;padding:.6rem;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Procurar pedidos sem ocasião</button>
+      <div id="varredura-resultado" style="margin-top:.75rem"></div>
+    </div>
+    <div class="resumo-card">
       <h3>📅 Quem comprou no ano passado nessa época</h3>
       <p style="font-size:12px;color:var(--muted);margin-bottom:.75rem">Clientes que compraram nos últimos 30 dias do ano passado — hora de contatar!</p>
       <div id="datas-ano-passado"></div>
@@ -541,7 +547,7 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
           <input type="hidden" id="fp-aniv-id">
           <div id="fp-aniv-resultado" style="margin-top:.35rem"></div>
         </div>
-        <div class="fs" style="margin-bottom:.5rem"><label>Nome (se não for cliente)</label><input type="text" id="fp-aniv-nome" placeholder="Ex: Ana Lima"></div>
+        <div class="fs" style="margin-bottom:.5rem"><label>Nome (se não for cliente)</label><input type="text" id="fp-aniv-nome" placeholder="Ex: Ana Lima" onblur="this.value=capitalizarNome(this.value)"></div>
         <div class="fs" style="margin-bottom:0">
           <label>Data de aniversário (opcional)</label>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
@@ -557,11 +563,11 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
         </div>
         <input type="hidden" id="fp-aniv-data">
       </div>
-      <div class="fs"><label>Enviado por</label><input type="text" id="fp-remetente" placeholder="Ex: João e Maria (se mais de um)"></div>
+      <div class="fs"><label>Enviado por</label><input type="text" id="fp-remetente" placeholder="Ex: João e Maria (se mais de um)" onblur="this.value=capitalizarNome(this.value)"></div>
       <div class="section-title">Destinatário</div>
       <div class="fs">
         <label>Nome de quem recebeu</label>
-        <input type="text" id="fp-dest-nome" placeholder="Ex: Ana Lima" oninput="buscarDestinatario(this.value)" autocomplete="off">
+        <input type="text" id="fp-dest-nome" placeholder="Ex: Ana Lima" oninput="buscarDestinatario(this.value)" onblur="this.value=capitalizarNome(this.value)" autocomplete="off">
         <input type="hidden" id="fp-dest-id">
         <div id="fp-dest-resultado" style="margin-top:.35rem"></div>
       </div>
@@ -762,7 +768,7 @@ let appIniciado=false;
 function iniciarApp(){
   if(appIniciado)return;
   appIniciado=true;
-  document.getElementById('data-hoje').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})+' · v7';
+  document.getElementById('data-hoje').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})+' · v9';
   inicializarListeners();
   carregarCatalogo();
 }
@@ -893,6 +899,36 @@ function ocasiaoLabel(o){
   if(cadastros.ocasiao?.includes(o))return'🎉 '+o;
   return{'dia-das-mulheres':'👩 Dia das Mulheres',aniversario:'🎂 Aniversário','dia-das-maes':'💐 Dia das Mães','dia-dos-namorados':'❤️ Namorados',natal:'🎄 Natal',casamento:'💍 Casamento',formatura:'🎓 Formatura','dia-dos-pais':'👨 Dia dos Pais',pascoa:'🐣 Páscoa','sem-ocasiao':'Sem ocasião',outro:'Outro'}[o]||o||'—';
 }
+// ── DETECTAR DATA COMEMORATIVA A PARTIR DA ENTREGA ────────────────
+// Se a entrega cai até 3 dias antes de uma data comemorativa
+// (ou no próprio dia), devolve a ocasião correspondente.
+function ocasiaoDaData(iso,janela=3){
+  if(!iso)return null;
+  const d=new Date(iso+'T12:00');
+  if(isNaN(d))return null;
+  const ano=d.getFullYear();
+  const fixas=[
+    {key:'dia-das-mulheres',nome:'Dia das Mulheres',data:`${ano}-03-08`},
+    {key:'pascoa',nome:'Páscoa',data:calcPascoa(ano)},
+    {key:'dia-das-maes',nome:'Dia das Mães',data:primeiroDomingo(ano,5,2)},
+    {key:'dia-dos-namorados',nome:'Dia dos Namorados',data:`${ano}-06-12`},
+    {key:'dia-dos-pais',nome:'Dia dos Pais',data:primeiroDomingo(ano,8,2)},
+    {key:'natal',nome:'Natal',data:`${ano}-12-25`},
+  ];
+  let melhor=null;
+  fixas.forEach(f=>{
+    if(!f.data)return;
+    const alvo=new Date(f.data+'T12:00');
+    if(isNaN(alvo))return;
+    const dif=Math.round((alvo-d)/(1000*60*60*24));
+    // Entrega no dia (0) ou até `janela` dias antes
+    if(dif>=0&&dif<=janela){
+      if(!melhor||dif<melhor.dif)melhor={...f,dif};
+    }
+  });
+  return melhor;
+}
+
 const OCASIOES_FIXAS='<option value="">Não informada</option><option value="aniversario">Aniversário</option><option value="dia-das-mulheres">Dia das Mulheres</option><option value="dia-das-maes">Dia das Mães</option><option value="dia-dos-namorados">Dia dos Namorados</option><option value="natal">Natal</option><option value="casamento">Casamento</option><option value="formatura">Formatura</option><option value="dia-dos-pais">Dia dos Pais</option><option value="pascoa">Páscoa</option><option value="sem-ocasiao">Sem ocasião especial</option><option value="outro">Outro</option>';
 function atualizarSelectOcasiao(){
   const extras=cadastros.ocasiao.map(o=>`<option value="${o}">${o}</option>`).join('');
@@ -1169,6 +1205,78 @@ async function renderAlertas(){
       </div>
       <div class="dq-data">${d.dias===0?'Hoje!':d.dias===1?'Amanhã':'Em '+d.dias+'d'}</div>
     </div>`).join(''):`<p style="font-size:13px;color:var(--muted);padding:.5rem 0">Nenhum aniversário de destinatário nos próximos 30 dias.</p>`;
+}
+
+// ── VARREDURA DE OCASIÕES ─────────────────────────────
+// Procura pedidos sem ocasião cuja entrega caiu perto de uma
+// data comemorativa, para a Manu marcar de uma vez só.
+let varreduraAchados=[];
+
+async function varrerOcasioes(){
+  const el=document.getElementById('varredura-resultado');
+  el.innerHTML='<p style="font-size:13px;color:var(--muted);padding:.5rem 0">Procurando...</p>';
+  varreduraAchados=[];
+  // Garante que os pedidos de todos os clientes estejam carregados
+  for(const c of clientes){
+    if(!pedidosPorCliente[c.id]){
+      try{await getPedidos(c.id);}catch(e){}
+    }
+  }
+  Object.entries(pedidosPorCliente).forEach(([cliId,peds])=>{
+    const cli=clientes.find(x=>x.id===cliId);
+    (peds||[]).forEach(p=>{
+      if(p.ocasiao)return;              // já tem ocasião
+      if(p.status==='cancelado')return; // não mexe em cancelado
+      if(!p.data)return;
+      const sug=ocasiaoDaData(p.data,3);
+      if(sug)varreduraAchados.push({cliId,cliNome:cli?.nome||'—',pedId:p.id,produto:p.produto||'Pedido',data:p.data,sug});
+    });
+  });
+  varreduraAchados.sort((a,b)=>(b.data||'').localeCompare(a.data||''));
+  renderVarredura();
+}
+
+function renderVarredura(){
+  const el=document.getElementById('varredura-resultado');
+  if(!varreduraAchados.length){
+    el.innerHTML='<p style="font-size:13px;color:var(--muted);padding:.5rem 0">Nenhum pedido sem ocasião perto de data comemorativa. Tudo certo! 🎉</p>';
+    return;
+  }
+  el.innerHTML=`<p style="font-size:12px;color:var(--cinza);margin-bottom:.5rem"><strong>${varreduraAchados.length}</strong> pedido${varreduraAchados.length>1?'s':''} encontrado${varreduraAchados.length>1?'s':''}:</p>`
+   +varreduraAchados.map((a,i)=>`<div style="border:1px solid var(--borda);border-radius:10px;padding:.6rem;margin-bottom:.4rem;background:var(--branco)">
+      <div style="font-size:13px;font-weight:500">${a.cliNome}</div>
+      <div style="font-size:12px;color:var(--muted);margin:.15rem 0">${a.produto} · entrega ${exibeData(a.data)}</div>
+      <div style="display:flex;gap:.4rem;align-items:center;margin-top:.4rem">
+        <button type="button" onclick="aplicarOcasiao(${i})" style="flex:1;background:var(--verde-bg);color:var(--verde);border:1px solid var(--verde-claro);border-radius:8px;padding:.45rem;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Marcar como ${a.sug.nome}</button>
+        <button type="button" onclick="ignorarOcasiao(${i})" style="background:var(--creme2);color:var(--muted);border:1px solid var(--borda);border-radius:8px;padding:.45rem .7rem;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">Não</button>
+      </div>
+    </div>`).join('');
+}
+
+async function aplicarOcasiao(i){
+  const a=varreduraAchados[i];
+  if(!a)return;
+  try{
+    await db.collection('clientes').doc(a.cliId).collection('pedidos').doc(a.pedId).update({ocasiao:a.sug.key,atualizado:new Date().toISOString()});
+    delete pedidosPorCliente[a.cliId];
+    await getPedidos(a.cliId);
+    varreduraAchados.splice(i,1);
+    renderVarredura();
+  }catch(e){
+    alert('Não consegui salvar: '+e.message);
+  }
+}
+
+async function ignorarOcasiao(i){
+  const a=varreduraAchados[i];
+  if(!a)return;
+  try{
+    await db.collection('clientes').doc(a.cliId).collection('pedidos').doc(a.pedId).update({ocasiao:'sem-ocasiao',atualizado:new Date().toISOString()});
+    delete pedidosPorCliente[a.cliId];
+    await getPedidos(a.cliId);
+  }catch(e){}
+  varreduraAchados.splice(i,1);
+  renderVarredura();
 }
 
 // ── DATAS QUENTES ─────────────────────────────────────
@@ -1713,7 +1821,7 @@ function salvarRascunho(cliId){
   if(document.getElementById('modal-pedido')?.style.display!=='flex')return;
   const itensEls=document.querySelectorAll('.pedido-item-row');
   const itens=Array.from(itensEls).map(row=>({produto:row.querySelector('.item-produto').value.trim(),valor:parseFloat(row.querySelector('.item-valor').value)||0})).filter(i=>i.produto);
-  const rascunho={itens,entrega:parseFloat(document.getElementById('fp-entrega')?.value)||0,data:document.getElementById('fp-data')?.value||'',dataConfirmacao:document.getElementById('fp-data-conf')?.value||'',status:document.getElementById('fp-status')?.value||'',ocasiao:document.getElementById('fp-ocasiao')?.value||'',obs:document.getElementById('fp-obs')?.value.trim()||'',destNome:document.getElementById('fp-dest-nome')?.value.trim()||'',destTel:document.getElementById('fp-dest-tel')?.value?.trim()||'',destBairro:document.getElementById('fp-dest-bairro')?.value.trim()||'',remetente:document.getElementById('fp-remetente')?.value.trim()||''};
+  const rascunho={itens,entrega:parseFloat(document.getElementById('fp-entrega')?.value)||0,data:document.getElementById('fp-data')?.value||'',dataConfirmacao:document.getElementById('fp-data-conf')?.value||'',status:document.getElementById('fp-status')?.value||'',ocasiao:document.getElementById('fp-ocasiao')?.value||'',obs:document.getElementById('fp-obs')?.value.trim()||'',destNome:capitalizarNome(document.getElementById('fp-dest-nome')?.value.trim()||''),destTel:document.getElementById('fp-dest-tel')?.value?.trim()||'',destBairro:document.getElementById('fp-dest-bairro')?.value.trim()||'',remetente:capitalizarNome(document.getElementById('fp-remetente')?.value.trim()||'')};
   if(itens.length)sessionStorage.setItem('rascunho-pedido-'+cliId,JSON.stringify(rascunho));
 }
 function fecharModalPedido(){
@@ -1753,7 +1861,25 @@ async function salvarPedido(){
   const anivDataCalc=anivDia&&anivMes?`0000-${anivMes}-${anivDia}`:'';
   document.getElementById('fp-aniv-data').value=anivDataCalc;
   const destId=document.getElementById('fp-dest-id')?.value||'';
-  const dados={produto,valor,itens,entrega:parseFloat(document.getElementById('fp-entrega')?.value)||0,data:document.getElementById('fp-data')?.value||'',dataConfirmacao:document.getElementById('fp-data-conf')?.value||'',status,valorRetido:status==='cancelado'?(parseFloat(document.getElementById('fp-retido')?.value)||0):0,ocasiao:document.getElementById('fp-ocasiao')?.value||'',anivNome:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-nome')?.value.trim()||''):'',anivId:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-id')?.value||''):'',anivData:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-data')?.value||''):'',remetente:document.getElementById('fp-remetente')?.value.trim()||'',destNome:document.getElementById('fp-dest-nome')?.value.trim()||'',destId,destTel:document.getElementById('fp-dest-tel')?.value?.trim()||'',destLogradouro:destLogr,destNumero:destNum,destComplemento:destComp,destBairro,destEnd:[destLogr,destNum,destComp].filter(Boolean).join(', '),obs:document.getElementById('fp-obs')?.value.trim()||'',foto:document.getElementById('fp-foto')?.value||'',atualizado:new Date().toISOString()};
+
+  // Se a ocasião ficou em branco e a entrega cai perto de uma data
+  // comemorativa, sugere marcar. Evita esquecer no corre do dia.
+  const selOc=document.getElementById('fp-ocasiao');
+  const dataEntrega=document.getElementById('fp-data')?.value||'';
+  if(selOc&&!selOc.value&&dataEntrega){
+    const sug=ocasiaoDaData(dataEntrega,3);
+    if(sug){
+      const quando=sug.dif===0?'é o dia':`é ${sug.dif} dia${sug.dif>1?'s':''} antes`;
+      if(confirm(`A entrega em ${exibeData(dataEntrega)} ${quando} de ${sug.nome}.\n\nMarcar este pedido como ${sug.nome}?`)){
+        selOc.value=sug.key;
+        toggleAniversario(sug.key);
+      }else{
+        selOc.value='sem-ocasiao';
+      }
+    }
+  }
+
+  const dados={produto,valor,itens,entrega:parseFloat(document.getElementById('fp-entrega')?.value)||0,data:document.getElementById('fp-data')?.value||'',dataConfirmacao:document.getElementById('fp-data-conf')?.value||'',status,valorRetido:status==='cancelado'?(parseFloat(document.getElementById('fp-retido')?.value)||0):0,ocasiao:document.getElementById('fp-ocasiao')?.value||'',anivNome:document.getElementById('fp-ocasiao')?.value==='aniversario'?capitalizarNome(document.getElementById('fp-aniv-nome')?.value.trim()||''):'',anivId:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-id')?.value||''):'',anivData:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-data')?.value||''):'',remetente:capitalizarNome(document.getElementById('fp-remetente')?.value.trim()||''),destNome:capitalizarNome(document.getElementById('fp-dest-nome')?.value.trim()||''),destId,destTel:document.getElementById('fp-dest-tel')?.value?.trim()||'',destLogradouro:destLogr,destNumero:destNum,destComplemento:destComp,destBairro,destEnd:[destLogr,destNum,destComp].filter(Boolean).join(', '),obs:document.getElementById('fp-obs')?.value.trim()||'',foto:document.getElementById('fp-foto')?.value||'',atualizado:new Date().toISOString()};
   itens.forEach(it=>{if(it.produto)autoSalvarCadastro('produto',it.produto);});
   if(destLogr)autoSalvarCadastro('rua',destLogr);
   if(destBairro)autoSalvarCadastro('bairro',destBairro);
