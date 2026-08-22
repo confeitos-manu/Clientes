@@ -768,7 +768,7 @@ let appIniciado=false;
 function iniciarApp(){
   if(appIniciado)return;
   appIniciado=true;
-  document.getElementById('data-hoje').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})+' · v10';
+  document.getElementById('data-hoje').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})+' · v11';
   inicializarListeners();
   carregarCatalogo();
 }
@@ -782,7 +782,9 @@ if(sessionStorage.getItem('auth')==='ok'){
 
 function inicializarListeners(){
 db.collection('clientes').orderBy('nome').onSnapshot(snap=>{
-  clientes=snap.docs.map(d=>({id:d.id,...d.data()}));
+  // Nomes antigos foram gravados em CAIXA ALTA. Capitaliza na exibição,
+  // sem mexer no que está salvo no banco.
+  clientes=snap.docs.map(d=>{const x={id:d.id,...d.data()};x.nome=capitalizarNome(x.nome||'');return x;});
   filtrar();atualizarStats();
   // Alertas mini carrega só clientes (sem pedidos) — rápido
   renderAlertasMini();
@@ -1439,7 +1441,7 @@ async function getPedidos(clienteId){
   if(pedidosPorCliente[clienteId])return pedidosPorCliente[clienteId];
   const timeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('Tempo esgotado.')),8000));
   const snap=await Promise.race([db.collection('clientes').doc(clienteId).collection('pedidos').orderBy('data','desc').get(),timeout]);
-  pedidosPorCliente[clienteId]=snap.docs.map(d=>({id:d.id,...d.data()}));
+  pedidosPorCliente[clienteId]=snap.docs.map(d=>{const x={id:d.id,...d.data()};if(x.destNome)x.destNome=capitalizarNome(x.destNome);if(x.remetente)x.remetente=capitalizarNome(x.remetente);if(x.anivNome)x.anivNome=capitalizarNome(x.anivNome);return x;});
   return pedidosPorCliente[clienteId];
 }
 
@@ -1640,14 +1642,50 @@ const CAT_URL='https://jhjchfesrxnpbabhylxs.supabase.co';
 const CAT_KEY='sb_publishable_cz83j5R_8j0yUaWFhFVMuw_m_QqfCoi';
 let catalogo=[];
 
+// Campos que servem de palavra-chave na busca. O nome da coluna pode
+// variar, então o app descobre sozinho quais existem na tabela.
+const CAT_HEAD=['cod','nome','preco','img','status'];
+// Tira acento e deixa minúsculo: assim "buque" acha "Buquê"
+function semAcento(t){return (t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
+function ehCampoBusca(k){
+  if(CAT_HEAD.includes(k))return false;
+  if(/(img|imagem|foto|url|link|_at|id$|^id|ordem|posi|crop|preco|valor)/i.test(k))return false;
+  return /(tag|palavra|chave|busca|descri|categor|colec|linha|tipo|nome|titul|subtitul)/i.test(k);
+}
+
+// Monta o texto que a busca vai varrer: código, nome e palavras-chave
+function montarBusca(p,campos){
+  const partes=[p.cod||'',p.nome||''];
+  campos.forEach(k=>{
+    const v=p[k];
+    if(typeof v==='string')partes.push(v);
+    else if(Array.isArray(v))partes.push(v.filter(x=>typeof x==='string').join(' '));
+  });
+  return semAcento(partes.join(' '));
+}
+
 async function carregarCatalogo(){
+  const H={'apikey':CAT_KEY,'Authorization':'Bearer '+CAT_KEY};
   try{
-    const res=await fetch(CAT_URL+'/rest/v1/catalogo?select=cod,nome,preco,img,status&order=nome.asc&limit=500',{
-      headers:{'apikey':CAT_KEY,'Authorization':'Bearer '+CAT_KEY}
-    });
+    // 1) Descobre as colunas da tabela
+    let campos=[];
+    try{
+      const amostra=await fetch(CAT_URL+'/rest/v1/catalogo?select=*&limit=1',{headers:H});
+      if(amostra.ok){
+        const linha=(await amostra.json())[0]||{};
+        campos=Object.keys(linha).filter(ehCampoBusca);
+      }
+    }catch(e){}
+
+    // 2) Busca a lista já com as colunas de palavra-chave
+    const sel=[...CAT_HEAD,...campos].join(',');
+    const res=await fetch(CAT_URL+'/rest/v1/catalogo?select='+sel+'&order=nome.asc&limit=500',{headers:H});
     if(!res.ok)throw new Error('falha');
     const dados=await res.json();
-    catalogo=(dados||[]).map(p=>({cod:p.cod||'',nome:p.nome||'',preco:parseFloat(p.preco)||0,img:p.img||'',status:p.status||''}));
+    catalogo=(dados||[]).map(p=>({
+      cod:p.cod||'',nome:p.nome||'',preco:parseFloat(p.preco)||0,
+      img:p.img||'',status:p.status||'',busca:montarBusca(p,campos)
+    }));
     if(catalogo.length){try{localStorage.setItem('cat_clientes',JSON.stringify(catalogo));}catch(e){}}
   }catch(e){
     // Sem internet ou erro: usa a última cópia salva no aparelho
@@ -1670,8 +1708,12 @@ function renderListaCatalogo(){
     el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:1rem 0;text-align:center">Carregando catálogo...<br><br>Se não aparecer nada, confira sua internet. Você ainda pode lançar no botão <strong>+ Manual</strong>.</div>';
     return;
   }
-  const b=(document.getElementById('cat-busca').value||'').toLowerCase().trim();
-  const lista=catalogo.filter(p=>!b||p.nome.toLowerCase().includes(b)||p.cod.toLowerCase().includes(b));
+  const termos=semAcento(document.getElementById('cat-busca').value).split(/\s+/).filter(Boolean);
+  const lista=catalogo.filter(p=>{
+    if(!termos.length)return true;
+    const alvo=p.busca||semAcento((p.cod||'')+' '+(p.nome||''));
+    return termos.every(t=>alvo.includes(t));
+  });
   if(!lista.length){
     el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:1rem 0;text-align:center">Nenhum produto encontrado.<br><br>Feche aqui e use <strong>+ Manual</strong> para digitar.</div>';
     return;
