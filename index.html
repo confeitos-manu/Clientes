@@ -768,7 +768,7 @@ let appIniciado=false;
 function iniciarApp(){
   if(appIniciado)return;
   appIniciado=true;
-  document.getElementById('data-hoje').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})+' · v11';
+  document.getElementById('data-hoje').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})+' · v12';
   inicializarListeners();
   carregarCatalogo();
 }
@@ -1546,13 +1546,13 @@ function renderDetalhe(c,peds,vinculos){
       const total=(Number(p.valor)||0)+(Number(p.entrega)||0);
       const antec=p.dataConfirmacao&&p.data?Math.round((new Date(p.data+'T12:00')-new Date(p.dataConfirmacao+'T12:00'))/(1000*60*60*24)):null;
       const isCan=p.status==='cancelado';
-      return`<div class="pedido-card" style="${isCan?'opacity:.7;border-color:#f0a0a0':''}">
+      return`<div class="pedido-card" style="overflow:hidden;${isCan?'opacity:.7;border-color:#f0a0a0':''}">
         <div class="pedido-head"><div class="pedido-produto">${isCan?'<s>':''}${p.produto||'Produto'}${isCan?'</s>':''}</div>
         <div style="text-align:right"><div class="pedido-valor" style="${isCan?'text-decoration:line-through;color:var(--muted)':''}">${fmt(total)}</div>
         <span class="pedido-status status-${p.status||'finalizado-ok'}">${{'finalizado-ok':'✅ Ok','finalizado-problema':'⚠️ Problema','cancelado':'❌ Cancelado'}[p.status]||'Ok'}</span></div></div>
         ${p.itens?.length>1?`<div style="margin:.35rem 0;padding:.4rem .6rem;background:var(--branco);border-radius:6px;font-size:12px">${p.itens.map(it=>`<div style="display:flex;justify-content:space-between;padding:.15rem 0;border-bottom:1px solid var(--borda)"><span>${it.produto}</span><span style="color:var(--verde);font-weight:500">${fmt(it.valor)}</span></div>`).join('')}</div>`:''}
         ${isCan&&p.valorRetido>0?`<div style="font-size:12px;color:var(--danger);font-weight:500;margin-bottom:.3rem">💰 Retido: ${fmt(p.valorRetido)}</div>`:''}
-        ${p.foto?`<img src="${p.foto}" onclick="abrirFotoGrande(this.src)" style="width:100%;max-height:200px;object-fit:cover;border-radius:8px;margin:.35rem 0;cursor:zoom-in;border:1px solid var(--borda)">`:''}
+        ${p.foto?`<img src="${p.foto}" onclick="abrirFotoGrande(this.src)" title="Toque para ampliar" style="float:right;width:54px;height:54px;object-fit:cover;border-radius:8px;margin:0 0 .35rem .5rem;cursor:zoom-in;border:1px solid var(--borda)">`:''}
         <div class="pedido-meta">
           ${p.dataConfirmacao?`<span>📋 ${exibeData(p.dataConfirmacao)}</span>`:''}
           ${p.data?`<span>🚚 ${exibeData(p.data)}</span>`:''}
