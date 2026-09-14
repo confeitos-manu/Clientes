@@ -1,0 +1,41 @@
+name: Manter os bancos acordados
+
+# Roda sozinho a cada 3 dias. O Supabase pausa projetos do plano gratuito
+# depois de 7 dias sem atividade, entao 3 dias deixa uma boa folga.
+on:
+  schedule:
+    - cron: "0 12 */3 * *"   # 09:00 no horario de Brasilia
+  workflow_dispatch:          # tambem da pra rodar na mao, pelo botao "Run workflow"
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Acordar o banco dos Insumos por foto
+        run: |
+          echo "Chamando o banco de insumos..."
+          codigo=$(curl -s -o /tmp/insumos.txt -w "%{http_code}" \
+            -H "apikey: ${{ secrets.CHAVE_INSUMOS }}" \
+            -H "Authorization: Bearer ${{ secrets.CHAVE_INSUMOS }}" \
+            "https://qqihummxrmsndpqzvduh.supabase.co/rest/v1/notas?select=id&limit=1")
+          echo "Resposta: $codigo"
+          cat /tmp/insumos.txt
+          if [ "$codigo" != "200" ]; then
+            echo "::error::O banco de insumos nao respondeu (codigo $codigo). Pode estar pausado."
+            exit 1
+          fi
+
+      - name: Acordar o banco da Precificacao
+        if: always()
+        run: |
+          echo "Chamando o banco de precificacao..."
+          codigo=$(curl -s -o /tmp/precificacao.txt -w "%{http_code}" \
+            -H "apikey: ${{ secrets.CHAVE_PRECIFICACAO }}" \
+            -H "Authorization: Bearer ${{ secrets.CHAVE_PRECIFICACAO }}" \
+            "https://jhjchfesrxnpbabhylxs.supabase.co/rest/v1/produtos?select=id&limit=1")
+          echo "Resposta: $codigo"
+          cat /tmp/precificacao.txt
+          if [ "$codigo" != "200" ]; then
+            echo "::error::O banco de precificacao nao respondeu (codigo $codigo). Pode estar pausado."
+            exit 1
+          fi
