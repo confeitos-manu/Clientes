@@ -687,6 +687,7 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
     <div class="modal-body">
       <p style="font-size:13px;color:var(--cinza);margin-bottom:1rem">Informe o custo de produção conforme sua planilha de precificação.</p>
       <input type="hidden" id="custo-produto-nome">
+      <div id="custo-dica" style="font-size:12px;color:#8a6a30;background:var(--dourado-bg);border:1px solid var(--dourado);border-radius:8px;padding:.5rem .7rem;margin-bottom:.75rem"></div>
       <div class="fs"><label>Produto</label><input type="text" id="custo-produto-label" disabled></div>
       <div class="fs"><label>Custo unitário (R$)</label><input type="number" id="custo-valor" placeholder="0,00" min="0" step="0.01"></div>
       <div class="form-actions">
@@ -951,7 +952,16 @@ function atualizarSelectOcasiao(){
   ['fp-ocasiao','lf-ocasiao'].forEach(id=>{const el=document.getElementById(id);if(el){const val=el.value;el.innerHTML=html;el.value=val;}});
 }
 function vinculoLabel(v){return{conjuge:'💑 Cônjuge/Namorado(a)',ficante:'🔥 Ficante',ex:'💔 Ex',mae:'👩 Mãe',pai:'👨 Pai',familiar:'👨‍👩‍👧 Familiar',amigo:'🤝 Amigo(a)',colega:'💼 Colega',indicacao:'🌟 Indicação',outro:'🔗 Outro'}[v]||v;}
-function calcPontos(peds){return Math.floor((peds||[]).filter(p=>(p.status==='finalizado-ok'||p.status==='finalizado-problema')&&(Number(p.valor)||0)>0&&!p.produto?.startsWith('🎁 Resgate')).reduce((s,p)=>s+(Number(p.valor)||0),0)/100);}
+const PTS_META=10;
+function ehResgate(p){return !!(p&&p.produto&&p.produto.startsWith('🎁 Resgate'));}
+function ehFinalizado(p){return p&&(p.status==='finalizado-ok'||p.status==='finalizado-problema');}
+function calcResgates(peds){return (peds||[]).filter(p=>ehResgate(p)).length;}
+function calcPontosGanhos(peds){
+  const gasto=(peds||[]).filter(p=>ehFinalizado(p)&&!ehResgate(p)&&(Number(p.valor)||0)>0).reduce((s,p)=>s+(Number(p.valor)||0),0);
+  return Math.floor(gasto/100);
+}
+// Saldo = pontos ganhos nas compras − 10 por recompensa já resgatada
+function calcPontos(peds){return Math.max(0, calcPontosGanhos(peds)-calcResgates(peds)*PTS_META);}
 function calcTicket(peds){const r=(peds||[]).filter(p=>(p.status==='finalizado-ok'||p.status==='finalizado-problema')&&(Number(p.valor)||0)>0&&!p.produto?.startsWith('🎁 Resgate'));if(!r.length)return 0;return r.reduce((s,p)=>s+(Number(p.valor)||0),0)/r.length;}
 function capitalizarNome(s){
   if(!s)return'';
@@ -1091,6 +1101,7 @@ function mudarAba(aba,el){
   if(aba==='relatorio'){
     if(!document.getElementById('rel-mes').value)document.getElementById('rel-mes').value=new Date().toISOString().slice(0,7);
     renderRelatorio();renderCustosLista();
+    if(!custosPrecLista.length)carregarCustosPrecificacao().then(()=>{renderCustosLista();renderRelatorio();});
   }
 }
 
@@ -1464,9 +1475,11 @@ async function verDetalhe(id){
 function renderDetalhe(c,peds,vinculos){
   const wNum=c.whats?.replace(/\D/g,'');
   const pts=calcPontos(peds);
-  const ptsMeta=10;
+  const ptsMeta=PTS_META;
+  const nResgates=calcResgates(peds);
+  const ptsGanhos=calcPontosGanhos(peds);
   const ptsProgress=((pts%ptsMeta)/ptsMeta)*100;
-  const finalizados=peds.filter(p=>p.status?.startsWith('finalizado'));
+  const finalizados=peds.filter(p=>p.status?.startsWith('finalizado')&&!ehResgate(p));
   const nReais=finalizados.length;
   const totalGasto=finalizados.reduce((s,p)=>s+(Number(p.valor)||0),0);
   const ticket=calcTicket(peds);
@@ -1491,7 +1504,7 @@ function renderDetalhe(c,peds,vinculos){
     <div class="pts-num">⭐ ${pts} pontos</div>
     <div class="pts-label">${ptsMeta-(pts%ptsMeta)} pontos para a próxima recompensa</div>
     <div class="pts-progress"><div class="pts-bar" style="width:${ptsProgress}%"></div></div>
-    <div class="pts-meta">Total gasto: ${fmt(totalGasto)} · Resgates: ${Math.floor(pts/ptsMeta)}</div>
+    <div class="pts-meta">Total gasto: ${fmt(totalGasto)} · Ganhos: ${ptsGanhos} · Resgates: ${nResgates}</div>
     ${pts>=ptsMeta?`<button class="resgatar-btn" onclick="resgatar('${c.id}','${c.nome}',${pts})" style="margin-top:.5rem">🎁 Resgatar recompensa</button>`:''}
   </div>`;
 
@@ -1641,6 +1654,74 @@ function excluirCliente(id){if(!confirm('Excluir este cliente?'))return;db.colle
 const CAT_URL='https://jhjchfesrxnpbabhylxs.supabase.co';
 const CAT_KEY='sb_publishable_cz83j5R_8j0yUaWFhFVMuw_m_QqfCoi';
 let catalogo=[];
+
+/* ===== CUSTOS AUTOMATICOS — vindos do app de precificacao (tabela "produtos") =====
+   A precificacao ja calcula materiais + mao de obra + rateio = custo_total.
+   Aqui a gente so le esse numero e usa no relatorio. */
+let custosPrecificacao={};   // nome normalizado -> {nome, custo}
+let custosPrecLista=[];      // mesma coisa em lista, do nome mais longo pro mais curto
+let custosPrecStatus='';
+
+// Deixa o nome "comparavel": sem acento, sem aspas, sem "2x" na frente
+function normProd(t){
+  return (t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toLowerCase()
+    .replace(/[\u0022\u0027\u201c\u201d\u2018\u2019]/g,' ')
+    .replace(/^\s*\d+\s*(x|un|unid|unidades?)?\s*/,'')
+    .replace(/[^a-z0-9]+/g,' ')
+    .trim();
+}
+
+async function carregarCustosPrecificacao(){
+  const H={'apikey':CAT_KEY,'Authorization':'Bearer '+CAT_KEY};
+  try{
+    const res=await fetch(CAT_URL+'/rest/v1/produtos?select=nome,custo_total,ativo&limit=500',{headers:H});
+    if(!res.ok)throw new Error('http '+res.status);
+    const dados=await res.json();
+    const mapa={};
+    (dados||[]).forEach(pr=>{
+      const custo=parseFloat(pr.custo_total)||0;
+      if(!pr.nome||custo<=0)return;
+      const n=normProd(pr.nome); if(!n)return;
+      if(!mapa[n]||pr.ativo===true)mapa[n]={nome:pr.nome,custo:custo};
+    });
+    custosPrecificacao=mapa;
+    montarListaPrec();
+    custosPrecStatus=custosPrecLista.length+' produto'+(custosPrecLista.length!==1?'s':'')+' com custo na precifica\u00e7\u00e3o';
+    try{localStorage.setItem('custos_prec',JSON.stringify(mapa));}catch(e){}
+  }catch(e){
+    try{
+      const c=localStorage.getItem('custos_prec');
+      if(c){custosPrecificacao=JSON.parse(c);montarListaPrec();custosPrecStatus='sem internet \u2014 usando a \u00faltima c\u00f3pia salva';}
+    }catch(e2){}
+    if(!custosPrecStatus)custosPrecStatus='n\u00e3o consegui ler a precifica\u00e7\u00e3o agora';
+  }
+}
+function montarListaPrec(){
+  custosPrecLista=Object.keys(custosPrecificacao)
+    .map(n=>({n:n,nome:custosPrecificacao[n].nome,custo:custosPrecificacao[n].custo}))
+    .sort((a,b)=>b.n.length-a.n.length);
+}
+
+// Ordem: 1) custo digitado a mao (voce mandou, voce manda) 2) custo da precificacao
+function custoInfo(nome){
+  const manual=Number(custosProdutos[nome])||0;
+  if(manual>0)return{custo:manual,auto:false,de:''};
+  const n=normProd(nome);
+  if(n&&custosPrecificacao[n])return{custo:custosPrecificacao[n].custo,auto:true,de:custosPrecificacao[n].nome};
+  if(n){
+    const m=custosPrecLista.find(x=>x.n.length>=5&&n.indexOf(x.n)!==-1);
+    if(m)return{custo:m.custo,auto:true,de:m.nome};
+  }
+  return{custo:0,auto:false,de:''};
+}
+function custoDe(nome){return custoInfo(nome).custo;}
+async function atualizarCustosPrec(){
+  const el=document.getElementById('prec-status');
+  if(el)el.textContent='Buscando na precifica\u00e7\u00e3o...';
+  await carregarCustosPrecificacao();
+  renderCustosLista();renderRelatorio();
+}
 
 // Campos que servem de palavra-chave na busca. O nome da coluna pode
 // variar, então o app descobre sozinho quais existem na tabela.
@@ -2099,7 +2180,7 @@ async function confirmarResgate(){
   const cliId=document.getElementById('resgate-cli-id').value;
   const recomp=document.getElementById('resgate-recompensa').value.trim();
   if(!recomp){alert('Informe a recompensa.');return;}
-  await db.collection('clientes').doc(cliId).collection('pedidos').add({produto:`🎁 Resgate: ${recomp}`,valor:-1000,entrega:0,data:new Date().toISOString().split('T')[0],status:'finalizado-ok',obs:'Resgate de recompensa',criado:new Date().toISOString()});
+  await db.collection('clientes').doc(cliId).collection('pedidos').add({produto:`🎁 Resgate: ${recomp}`,valor:0,entrega:0,data:new Date().toISOString().split('T')[0],status:'finalizado-ok',obs:'Resgate de recompensa',criado:new Date().toISOString()});
   delete pedidosPorCliente[cliId];
   fechar('modal-resgate');
   await verDetalhe(cliId);
@@ -2188,12 +2269,12 @@ async function renderRelatorio(){
   const totalFrete=produtos.reduce((s,p)=>s+p.frete,0);
   const totalQtd=produtos.reduce((s,p)=>s+p.qtd,0);
   let totalCusto=0;let temCusto=false;
-  produtos.forEach(p=>{const c=custosProdutos[p.nome]||0;if(c>0){temCusto=true;totalCusto+=c*p.qtd;}});
+  produtos.forEach(p=>{const c=custoDe(p.nome);if(c>0){temCusto=true;totalCusto+=c*p.qtd;}});
   const lucroTotal=totalReceita-totalCusto;
   document.getElementById('rel-resumo-topo').innerHTML=`<div class="rel-stat"><div class="rs-num">${totalQtd}</div><div class="rs-label">Vendas</div></div><div class="rel-stat"><div class="rs-num">R$${Math.round(totalReceita)}</div><div class="rs-label">Receita</div></div><div class="rel-stat lucro"><div class="rs-num">${temCusto?'R$'+Math.round(lucroTotal):'—'}</div><div class="rs-label">Lucro líquido</div></div>`;
   let html=`<div style="font-size:12px;color:var(--muted);margin-bottom:.75rem">${formataMes(mes)} · ${totalQtd} venda${totalQtd!==1?'s':''} · frete total ${fmt(totalFrete)}</div>`;
   html+=produtos.map(p=>{
-    const custo=custosProdutos[p.nome]||0,custTotal=custo*p.qtd,lucro=custo>0?p.receita-custTotal:null,margem=custo>0&&p.receita>0?Math.round((lucro/p.receita)*100):null;
+    const custo=custoDe(p.nome),custTotal=custo*p.qtd,lucro=custo>0?p.receita-custTotal:null,margem=custo>0&&p.receita>0?Math.round((lucro/p.receita)*100):null;
     return`<div class="rel-produto-row"><div class="rel-produto-head"><div><div class="rel-produto-nome">🌸 ${p.nome}</div><div class="rel-produto-qtd">${p.qtd}x${p.frete>0?' · frete '+fmt(p.frete):''}</div></div>${custo===0?`<button class="btn-edit-custo" onclick="abrirCusto('${p.nome.replace(/'/g,"\\'")}')">+ custo</button>`:''}</div><div class="rel-produto-valores"><div class="rel-val-item"><div class="rvl">Receita</div><div class="rvv">${fmt(p.receita)}</div></div><div class="rel-val-item"><div class="rvl">Custo total</div><div class="rvv">${custo>0?fmt(custTotal):'—'}</div></div><div class="rel-val-item ${lucro!==null?'lucro-ok':'lucro-sem'}"><div class="rvl">Lucro${margem!==null?' ('+margem+'%)':''}</div><div class="rvv">${lucro!==null?fmt(lucro):'cadastre o custo'}</div></div></div></div>`;
   }).join('');
   if(temCusto)html+=`<div style="background:var(--verde-bg);border:1px solid var(--verde-claro);border-radius:10px;padding:.85rem;margin-top:.5rem"><div style="font-size:12px;color:var(--cinza);margin-bottom:.3rem">TOTAL DO MÊS</div><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><span><small style="color:var(--cinza)">Receita: </small><strong>${fmt(totalReceita)}</strong></span><span><small style="color:var(--cinza)">Custo: </small><strong>${fmt(totalCusto)}</strong></span><span><small style="color:var(--cinza)">Lucro: </small><strong style="color:#2a7a2a;font-size:15px">${fmt(lucroTotal)}</strong></span></div></div>`;
@@ -2203,9 +2284,18 @@ function formataMes(mes){const[ano,m]=mes.split('-');const n=['Janeiro','Feverei
 function renderCustosLista(){
   const el=document.getElementById('rel-custos-lista');if(!el)return;
   const todos=[...new Set([...Object.values(pedidosPorCliente).flat().map(p=>p.produto).filter(Boolean),...(cadastros.produto||[])])].sort();
-  el.innerHTML=todos.length?todos.map(nome=>{const custo=custosProdutos[nome]||0;return`<div class="custo-item"><div class="ci-nome">${nome}</div><div class="ci-valor">${custo>0?fmt(custo):'—'}</div><button class="btn-edit-custo" onclick="abrirCusto('${nome.replace(/'/g,"\\'")}')">✏️ ${custo>0?'Editar':'+ Custo'}</button></div>`;}).join(''):`<div style="font-size:13px;color:var(--muted);padding:.5rem 0">Lance algumas vendas primeiro.</div>`;
+  const semCusto=todos.filter(n=>custoDe(n)<=0).length;
+  const topo=`<div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.6rem">
+      <div id="prec-status" style="font-size:11px;color:var(--muted)">${custosPrecStatus||'toque em atualizar para buscar os custos'}${semCusto?' · '+semCusto+' sem custo':''}</div>
+      <button class="btn-edit-custo" onclick="atualizarCustosPrec()">↻ Atualizar</button>
+    </div>`;
+  el.innerHTML=topo+(todos.length?todos.map(nome=>{
+    const info=custoInfo(nome);
+    const tag=info.auto?`<span style="font-size:10px;color:#8a6a30;background:var(--dourado-bg);border:1px solid var(--dourado);border-radius:5px;padding:1px 5px;margin-left:.35rem" title="Custo vindo de: ${info.de}">auto</span>`:'';
+    return`<div class="custo-item"><div class="ci-nome">${nome}${tag}</div><div class="ci-valor">${info.custo>0?fmt(info.custo):'—'}</div><button class="btn-edit-custo" onclick="abrirCusto('${nome.replace(/'/g,"\\'")}')">✏️ ${info.custo>0?'Editar':'+ Custo'}</button></div>`;
+  }).join(''):`<div style="font-size:13px;color:var(--muted);padding:.5rem 0">Lance algumas vendas primeiro.</div>`);
 }
-function abrirCusto(nome){document.getElementById('custo-produto-nome').value=nome;document.getElementById('custo-produto-label').value=nome;document.getElementById('custo-valor').value=custosProdutos[nome]||'';document.getElementById('modal-custo').style.display='flex';setTimeout(()=>document.getElementById('custo-valor').focus(),100);}
+function abrirCusto(nome){const _i=custoInfo(nome);document.getElementById('custo-produto-nome').value=nome;document.getElementById('custo-produto-label').value=nome;document.getElementById('custo-valor').value=custosProdutos[nome]||'';const _d=document.getElementById('custo-dica');if(_d)_d.innerHTML=_i.auto?`A precifica\u00e7\u00e3o j\u00e1 traz <strong>${fmt(_i.custo)}</strong> (produto \u201c${_i.de}\u201d). Deixe em branco para continuar usando esse valor autom\u00e1tico.`:'Deixe em branco se quiser usar o custo da precifica\u00e7\u00e3o, quando existir.';document.getElementById('modal-custo').style.display='flex';setTimeout(()=>document.getElementById('custo-valor').focus(),100);}
 function salvarCustoProduto(){
   const nome=document.getElementById('custo-produto-nome').value;
   const valor=parseFloat(document.getElementById('custo-valor').value)||0;
