@@ -2,10 +2,14 @@ name: Manter os bancos acordados
 
 # Roda sozinho a cada 3 dias. O Supabase pausa projetos do plano gratuito
 # depois de 7 dias sem atividade, entao 3 dias deixa uma boa folga.
+#
+# As chaves abaixo sao as "publishable" (publicas) dos dois projetos -
+# as mesmas que ja aparecem no codigo dos apps. Nao coloque aqui a
+# chave service_role: ela da acesso total ao banco.
 on:
   schedule:
     - cron: "0 12 */3 * *"   # 09:00 no horario de Brasilia
-  workflow_dispatch:          # tambem da pra rodar na mao, pelo botao "Run workflow"
+  workflow_dispatch:          # botao "Run workflow" pra rodar na mao
 
 jobs:
   ping:
@@ -13,29 +17,27 @@ jobs:
     steps:
       - name: Acordar o banco dos Insumos por foto
         run: |
-          echo "Chamando o banco de insumos..."
-          codigo=$(curl -s -o /tmp/insumos.txt -w "%{http_code}" \
-            -H "apikey: ${{ secrets.CHAVE_INSUMOS }}" \
-            -H "Authorization: Bearer ${{ secrets.CHAVE_INSUMOS }}" \
+          chave="sb_publishable_z_K62mgmqtJAQjFWWTrkDg__kO5cdJG"
+          codigo=$(curl -s -o /tmp/r.txt -w "%{http_code}" \
+            -H "apikey: $chave" -H "Authorization: Bearer $chave" \
             "https://qqihummxrmsndpqzvduh.supabase.co/rest/v1/notas?select=id&limit=1")
-          echo "Resposta: $codigo"
-          cat /tmp/insumos.txt
+          echo "Resposta: $codigo"; cat /tmp/r.txt; echo
           if [ "$codigo" != "200" ]; then
-            echo "::error::O banco de insumos nao respondeu (codigo $codigo). Pode estar pausado."
+            echo "::error::Banco de INSUMOS nao respondeu (codigo $codigo). Pode estar pausado."
             exit 1
           fi
+          echo "Insumos: ok"
 
       - name: Acordar o banco da Precificacao
         if: always()
         run: |
-          echo "Chamando o banco de precificacao..."
-          codigo=$(curl -s -o /tmp/precificacao.txt -w "%{http_code}" \
-            -H "apikey: ${{ secrets.CHAVE_PRECIFICACAO }}" \
-            -H "Authorization: Bearer ${{ secrets.CHAVE_PRECIFICACAO }}" \
+          chave="sb_publishable_cz83j5R_8j0yUaWFhFVMuw_m_QqfCoi"
+          codigo=$(curl -s -o /tmp/r.txt -w "%{http_code}" \
+            -H "apikey: $chave" -H "Authorization: Bearer $chave" \
             "https://jhjchfesrxnpbabhylxs.supabase.co/rest/v1/produtos?select=id&limit=1")
-          echo "Resposta: $codigo"
-          cat /tmp/precificacao.txt
+          echo "Resposta: $codigo"; cat /tmp/r.txt; echo
           if [ "$codigo" != "200" ]; then
-            echo "::error::O banco de precificacao nao respondeu (codigo $codigo). Pode estar pausado."
+            echo "::error::Banco de PRECIFICACAO nao respondeu (codigo $codigo). Pode estar pausado."
             exit 1
           fi
+          echo "Precificacao: ok"
