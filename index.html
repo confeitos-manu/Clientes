@@ -413,7 +413,7 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
     </div>
     <div class="resumo-card">
       <h3>💰 Custos por produto</h3>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:.75rem">Informe o custo de cada produto conforme sua <a href="https://precificacao-omega.vercel.app/" target="_blank" style="color:var(--verde)">planilha de precificação</a>.</p>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:.75rem">O custo vem sozinho da <a href="https://insumos-confeitos.vercel.app/" target="_blank" style="color:var(--verde)">precificação (app de Insumos › Produtos)</a> quando o produto está ligado ao código do catálogo. Digite aqui só se quiser trocar.</p>
       <div id="rel-custos-lista"></div>
     </div>
   </div>
@@ -761,7 +761,7 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
   <div class="modal">
     <div class="modal-head"><h2>💰 Custo do produto</h2><button class="btn-x" onclick="fechar('modal-custo')">×</button></div>
     <div class="modal-body">
-      <p style="font-size:13px;color:var(--cinza);margin-bottom:1rem">Informe o custo de produção conforme sua planilha de precificação.</p>
+      <p style="font-size:13px;color:var(--cinza);margin-bottom:1rem">O custo vem da precificação (app de Insumos › Produtos). Digite aqui só se quiser trocar.</p>
       <input type="hidden" id="custo-produto-nome">
       <div id="custo-dica" style="font-size:12px;color:#8a6a30;background:var(--dourado-bg);border:1px solid var(--dourado);border-radius:8px;padding:.5rem .7rem;margin-bottom:.75rem"></div>
       <div class="fs"><label>Produto</label><input type="text" id="custo-produto-label" disabled></div>
@@ -855,9 +855,10 @@ let appIniciado=false;
 function iniciarApp(){
   if(appIniciado)return;
   appIniciado=true;
-  document.getElementById('data-hoje').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})+' · v12';
+  document.getElementById('data-hoje').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})+' · v13';
   inicializarListeners();
-  carregarCatalogo();
+  // com o catálogo carregado, o custo passa a ser achado pelo código
+  carregarCatalogo().then(()=>{ if(custosPrecLista.length){ try{renderCustosLista();renderRelatorio();}catch(e){} } });
 }
 
 // Verifica se já está logado — depois de todas as declarações
@@ -1776,6 +1777,7 @@ let catalogo=[];
    A precificacao ja calcula materiais + mao de obra + rateio = custo_total.
    Aqui a gente so le esse numero e usa no relatorio. */
 let custosPrecificacao={};   // nome normalizado -> {nome, custo}
+let custosPorCodigo={};      // código do catálogo -> {nome, custo}  (ligação que não quebra ao renomear)
 let custosPrecLista=[];      // mesma coisa em lista, do nome mais longo pro mais curto
 let custosPrecStatus='';
 
@@ -1792,23 +1794,29 @@ function normProd(t){
 async function carregarCustosPrecificacao(){
   const H={'apikey':CAT_KEY,'Authorization':'Bearer '+CAT_KEY};
   try{
-    const res=await fetch(CAT_URL+'/rest/v1/produtos?select=nome,custo_total,ativo&limit=500',{headers:H});
+    const res=await fetch(CAT_URL+'/rest/v1/produtos?select=nome,codigo,custo_total,ativo&limit=500',{headers:H});
     if(!res.ok)throw new Error('http '+res.status);
     const dados=await res.json();
-    const mapa={};
+    const mapa={}, porCod={};
     (dados||[]).forEach(pr=>{
       const custo=parseFloat(pr.custo_total)||0;
+      if(custo>0&&pr.codigo){
+        const k=String(pr.codigo).trim().toUpperCase();
+        if(!porCod[k]||pr.ativo===true)porCod[k]={nome:pr.nome,custo:custo};
+      }
       if(!pr.nome||custo<=0)return;
       const n=normProd(pr.nome); if(!n)return;
       if(!mapa[n]||pr.ativo===true)mapa[n]={nome:pr.nome,custo:custo};
     });
     custosPrecificacao=mapa;
+    custosPorCodigo=porCod;
     montarListaPrec();
     custosPrecStatus=custosPrecLista.length+' produto'+(custosPrecLista.length!==1?'s':'')+' com custo na precifica\u00e7\u00e3o';
-    try{localStorage.setItem('custos_prec',JSON.stringify(mapa));}catch(e){}
+    try{localStorage.setItem('custos_prec',JSON.stringify(mapa));localStorage.setItem('custos_prec_cod',JSON.stringify(porCod));}catch(e){}
   }catch(e){
     try{
       const c=localStorage.getItem('custos_prec');
+      const cc=localStorage.getItem('custos_prec_cod');if(cc)custosPorCodigo=JSON.parse(cc);
       if(c){custosPrecificacao=JSON.parse(c);montarListaPrec();custosPrecStatus='sem internet \u2014 usando a \u00faltima c\u00f3pia salva';}
     }catch(e2){}
     if(!custosPrecStatus)custosPrecStatus='n\u00e3o consegui ler a precifica\u00e7\u00e3o agora';
@@ -1820,11 +1828,17 @@ function montarListaPrec(){
     .sort((a,b)=>b.n.length-a.n.length);
 }
 
-// Ordem: 1) custo digitado a mao (voce mandou, voce manda) 2) custo da precificacao
+// Ordem: 1) custo digitado a mao (voce mandou, voce manda)
+//        2) pelo CODIGO do catalogo (nao quebra se renomear) 3) pelo nome
 function custoInfo(nome){
   const manual=Number(custosProdutos[nome])||0;
   if(manual>0)return{custo:manual,auto:false,de:''};
   const n=normProd(nome);
+  if(n&&catalogo.length){
+    const cat=catalogo.find(c=>normProd(c.nome)===n);
+    const k=cat&&cat.cod?String(cat.cod).trim().toUpperCase():'';
+    if(k&&custosPorCodigo[k])return{custo:custosPorCodigo[k].custo,auto:true,de:custosPorCodigo[k].nome+' ('+cat.cod+')'};
+  }
   if(n&&custosPrecificacao[n])return{custo:custosPrecificacao[n].custo,auto:true,de:custosPrecificacao[n].nome};
   if(n){
     const m=custosPrecLista.find(x=>x.n.length>=5&&n.indexOf(x.n)!==-1);
