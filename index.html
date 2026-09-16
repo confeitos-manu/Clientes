@@ -90,6 +90,15 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
 @media(min-width:540px){.overlay{align-items:center;padding:1rem}}
 .modal{background:var(--branco);border-radius:20px 20px 0 0;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;display:flex;flex-direction:column}
 @media(min-width:540px){.modal{border-radius:20px;max-height:88vh}}
+/* Tela grande: a ficha e os formularios ganham largura, e os campos
+   que ficam em duas colunas passam a caber lado a lado de verdade. */
+@media(min-width:900px){
+  .modal{max-width:720px;max-height:90vh}
+  .det-grid{grid-template-columns:repeat(3,1fr)}
+}
+@media(min-width:1280px){
+  .modal{max-width:860px}
+}
 .modal-head{background:var(--verde);color:#fff;padding:1.1rem 1.25rem;border-radius:20px 20px 0 0;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5;flex-shrink:0}
 .modal-head h2{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:500}
 .btn-x{background:none;border:none;color:rgba(255,255,255,.7);font-size:24px;cursor:pointer;line-height:1;padding:0 2px}
@@ -243,15 +252,17 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
     overflow:hidden;
   }
   /* coluna da direita: os tres painies fixos */
-  .main > #aba-resumo, .main > #aba-alertas, .main > #aba-datas{
+  .main > #aba-alertas, .main > #aba-datas{
     display:block!important;
     grid-column:2;
     background:var(--branco);
   }
-  .main > #aba-resumo{grid-row:1}
-  .main > #aba-alertas{grid-row:2}
-  .main > #aba-datas{grid-row:3}
-  .main > div[id^="aba-"]:not(#aba-resumo):not(#aba-alertas):not(#aba-datas){grid-row:1 / span 4}
+  .main > div[id^="aba-"]{grid-row:1 / span 9}
+  .main > #aba-alertas, .main > #aba-datas{grid-row:auto}
+  /* clicou no botao do painel: ele sai da lateral e ocupa a coluna grande */
+  .main > #aba-alertas.em-foco, .main > #aba-datas.em-foco{
+    grid-column:1;grid-row:1 / span 9;background:var(--creme);
+  }
 
   .painel-titulo{
     display:block;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
@@ -302,10 +313,10 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
 </div>
 <div class="nav">
   <div class="nav-item active" onclick="mudarAba('clientes',this)">👥 Clientes</div>
-  <div class="nav-item so-celular" onclick="mudarAba('alertas',this)">🔔 Alertas</div>
-  <div class="nav-item so-celular" onclick="mudarAba('datas',this)">📅 Datas</div>
+  <div class="nav-item" onclick="mudarAba('alertas',this)">🔔 Alertas</div>
+  <div class="nav-item" onclick="mudarAba('datas',this)">📅 Datas</div>
   <div class="nav-item" onclick="mudarAba('relatorio',this)">📈 Relatório</div>
-  <div class="nav-item so-celular" onclick="mudarAba('resumo',this)">📊 Resumo</div>
+  <div class="nav-item" onclick="mudarAba('resumo',this)">📊 Resumo</div>
   <div class="nav-item" onclick="mudarAba('pontos',this)">⭐ Pontos</div>
   <div class="nav-item" onclick="mudarAba('cadastros',this)">⚙️</div>
   <div class="nav-item" style="display:none" onclick="mudarAba('importar',this)">📥 Importar</div>
@@ -410,19 +421,6 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
 
 <!-- RESUMO -->
 <div id="aba-resumo" style="display:none">
-  <span class="painel-titulo">📊 Resumo</span>
-  <div class="resumo-pad" style="padding-bottom:0">
-    <div class="resumo-card">
-      <h3>⬇️ Exportar tudo</h3>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:.6rem">Baixa uma planilha com todos os pedidos e os dados do cliente de cada um. Serve pra análise fora do app.</p>
-      <label style="display:flex;align-items:center;gap:.5rem;font-size:13px;margin-bottom:.6rem;cursor:pointer">
-        <input type="checkbox" id="exp-anonimo" style="width:17px;height:17px">
-        Trocar nomes e telefones por códigos
-      </label>
-      <button class="btn-primary" style="width:100%" onclick="exportarTudoCSV()">⬇️ Baixar planilha</button>
-      <div id="exp-status" style="font-size:12px;color:var(--muted);margin-top:.5rem"></div>
-    </div>
-  </div>
   <div class="resumo-pad" id="resumo-content"><div class="empty"><div class="empty-icon">📊</div><p>Carregando...</p></div></div>
 </div>
 
@@ -780,6 +778,16 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
 <!-- ABA IMPORTAR -->
 <div id="aba-importar" style="display:none">
   <div class="resumo-pad">
+    <div class="resumo-card">
+      <h3>⬇️ Exportar tudo</h3>
+      <p style="font-size:13px;color:var(--cinza);line-height:1.6;margin-bottom:.75rem">Baixa uma planilha com todos os pedidos e os dados do cliente de cada um. Serve pra analisar fora do app.</p>
+      <label style="display:flex;align-items:center;gap:.5rem;font-size:13px;margin-bottom:.75rem;cursor:pointer">
+        <input type="checkbox" id="exp-anonimo" style="width:17px;height:17px">
+        Trocar nomes e telefones por códigos
+      </label>
+      <button class="btn-primary" style="width:100%" onclick="exportarTudoCSV()">⬇️ Baixar planilha</button>
+      <div id="exp-status" style="font-size:12px;color:var(--muted);margin-top:.5rem"></div>
+    </div>
     <div class="resumo-card">
       <h3>📱 Importar conversa do WhatsApp</h3>
       <p style="font-size:13px;color:var(--cinza);line-height:1.6;margin-bottom:.75rem">Cole aqui o texto de uma conversa exportada do WhatsApp. A IA vai identificar automaticamente o cliente, produtos, valores e datas.</p>
@@ -1195,6 +1203,11 @@ function mudarAba(aba,el){
   el.classList.add('active');
   ['clientes','alertas','datas','relatorio','resumo','pontos','cadastros','importar'].forEach(a=>{
     document.getElementById('aba-'+a).style.display=a===aba?'block':'none';
+  });
+  // No notebook os paineis laterais nao "abrem" numa pagina nova: eles saem
+  // da lateral e ocupam a coluna grande. Sem isso, clicar neles nao fazia nada.
+  ['alertas','datas'].forEach(a=>{
+    document.getElementById('aba-'+a).classList.toggle('em-foco', ehNotebook() && a===aba);
   });
   if(aba==='alertas')renderAlertas();
   if(aba==='datas')renderDatasQuentes();
@@ -2695,7 +2708,6 @@ function atualizarPaineisLaterais(){
   clearTimeout(_painelTimer);
   // espera os dados assentarem: o onSnapshot dispara varias vezes seguidas
   _painelTimer=setTimeout(()=>{
-    try{ renderResumo(); }catch(e){ console.error('painel resumo',e); }
     try{ renderAlertas(); }catch(e){ console.error('painel alertas',e); }
     try{ renderDatasQuentes(); }catch(e){ console.error('painel datas',e); }
   },500);
