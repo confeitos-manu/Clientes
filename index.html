@@ -259,6 +259,16 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
   }
   .main > div[id^="aba-"]{grid-row:1 / span 9}
   .main > #aba-alertas, .main > #aba-datas{grid-row:auto}
+  /* listas da lateral com altura limitada e rolagem propria:
+     assim a pagina nao fica enorme e nao "pula pro final" ao salvar */
+  .main > #aba-alertas:not(.em-foco) #alerta-aniversarios,
+  .main > #aba-alertas:not(.em-foco) #alerta-inativos,
+  .main > #aba-alertas:not(.em-foco) #alerta-destinatarios,
+  .main > #aba-datas:not(.em-foco) #varredura-resultado,
+  .main > #aba-datas:not(.em-foco) #datas-ano-passado,
+  .main > #aba-datas:not(.em-foco) #datas-calendario{
+    max-height:230px;overflow-y:auto;overscroll-behavior:contain;padding-right:4px;
+  }
   /* clicou no botao do painel: ele sai da lateral e ocupa a coluna grande */
   .main > #aba-alertas.em-foco, .main > #aba-datas.em-foco{
     grid-column:1;grid-row:1 / span 9;background:var(--creme);
@@ -855,10 +865,10 @@ let appIniciado=false;
 function iniciarApp(){
   if(appIniciado)return;
   appIniciado=true;
-  document.getElementById('data-hoje').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})+' · v13';
+  document.getElementById('data-hoje').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})+' · v14';
   inicializarListeners();
   // com o catálogo carregado, o custo passa a ser achado pelo código
-  carregarCatalogo().then(()=>{ if(custosPrecLista.length){ try{renderCustosLista();renderRelatorio();}catch(e){} } });
+  carregarCatalogo();
 }
 
 // Verifica se já está logado — depois de todas as declarações
@@ -1778,6 +1788,7 @@ let catalogo=[];
    Aqui a gente so le esse numero e usa no relatorio. */
 let custosPrecificacao={};   // nome normalizado -> {nome, custo}
 let custosPorCodigo={};      // código do catálogo -> {nome, custo}  (ligação que não quebra ao renomear)
+let codPorNomeCat={};        // nome (produto ou variação, igual à Comanda) -> código do catálogo
 let custosPrecLista=[];      // mesma coisa em lista, do nome mais longo pro mais curto
 let custosPrecStatus='';
 
@@ -1810,6 +1821,26 @@ async function carregarCustosPrecificacao(){
     });
     custosPrecificacao=mapa;
     custosPorCodigo=porCod;
+    // nomes do catálogo, incluindo variações ("nome - diferença", como a Comanda escreve)
+    try{
+      const rc=await fetch(CAT_URL+'/rest/v1/catalogo?select=cod,nome,preco,medias&limit=500',{headers:H});
+      if(rc.ok){
+        const cat=await rc.json(), mp={};
+        (cat||[]).forEach(c=>{
+          if(c.cod&&c.nome)mp[normProd(c.nome)]=c.cod;
+          (c.medias||[]).forEach(m=>{
+            if(!m||!m.cod||m.tipo==='ref')return;
+            const nm=(m.nome||c.nome||'')+(m.diferenca?' - '+m.diferenca:'');
+            // variação com o mesmo preço usa o custo do principal
+            const pv=(m.preco!=null&&m.preco!=='')?parseFloat(m.preco):NaN;
+            const mesmo=isNaN(pv)||Math.abs(pv-(parseFloat(c.preco)||0))<0.01;
+            const k=normProd(nm); if(k&&!mp[k])mp[k]=mesmo?(c.cod||m.cod):m.cod;
+          });
+        });
+        codPorNomeCat=mp;
+        try{localStorage.setItem('cat_cod_nome',JSON.stringify(mp));}catch(e){}
+      }
+    }catch(e){}
     montarListaPrec();
     custosPrecStatus=custosPrecLista.length+' produto'+(custosPrecLista.length!==1?'s':'')+' com custo na precifica\u00e7\u00e3o';
     try{localStorage.setItem('custos_prec',JSON.stringify(mapa));localStorage.setItem('custos_prec_cod',JSON.stringify(porCod));}catch(e){}
@@ -1817,6 +1848,7 @@ async function carregarCustosPrecificacao(){
     try{
       const c=localStorage.getItem('custos_prec');
       const cc=localStorage.getItem('custos_prec_cod');if(cc)custosPorCodigo=JSON.parse(cc);
+      const cn=localStorage.getItem('cat_cod_nome');if(cn)codPorNomeCat=JSON.parse(cn);
       if(c){custosPrecificacao=JSON.parse(c);montarListaPrec();custosPrecStatus='sem internet \u2014 usando a \u00faltima c\u00f3pia salva';}
     }catch(e2){}
     if(!custosPrecStatus)custosPrecStatus='n\u00e3o consegui ler a precifica\u00e7\u00e3o agora';
@@ -1834,10 +1866,12 @@ function custoInfo(nome){
   const manual=Number(custosProdutos[nome])||0;
   if(manual>0)return{custo:manual,auto:false,de:''};
   const n=normProd(nome);
-  if(n&&catalogo.length){
-    const cat=catalogo.find(c=>normProd(c.nome)===n);
-    const k=cat&&cat.cod?String(cat.cod).trim().toUpperCase():'';
-    if(k&&custosPorCodigo[k])return{custo:custosPorCodigo[k].custo,auto:true,de:custosPorCodigo[k].nome+' ('+cat.cod+')'};
+  if(n){
+    // o pedido pode vir marcado "(esgotado)"/"(oculto)" pela Comanda
+    const n2=normProd(String(nome||'').replace(/\s*\((esgotado|oculto)\)\s*$/i,''));
+    const cod=codPorNomeCat[n2]||codPorNomeCat[n];
+    const k=cod?String(cod).trim().toUpperCase():'';
+    if(k&&custosPorCodigo[k])return{custo:custosPorCodigo[k].custo,auto:true,de:custosPorCodigo[k].nome+' ('+cod+')'};
   }
   if(n&&custosPrecificacao[n])return{custo:custosPrecificacao[n].custo,auto:true,de:custosPrecificacao[n].nome};
   if(n){
