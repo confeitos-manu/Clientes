@@ -665,10 +665,10 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
       </div>
       <div class="fs"><label>Observações</label><textarea id="fp-obs" placeholder="Detalhes especiais, recados..."></textarea></div>
       <div class="fs">
-        <label>Foto do pedido</label>
+        <label>Fotos do pedido (até 4)</label>
         <input type="hidden" id="fp-foto">
         <div id="fp-foto-preview" style="margin-bottom:.5rem"></div>
-        <input type="file" id="fp-foto-input" accept="image/*" style="display:none" onchange="processarFotoPedido(this)">
+        <input type="file" id="fp-foto-input" accept="image/*" multiple style="display:none" onchange="processarFotoPedido(this)">
         <button type="button" id="fp-foto-btn" onclick="document.getElementById('fp-foto-input').click()" style="width:100%;background:var(--creme2);color:var(--cinza);border:1px dashed var(--borda);border-radius:8px;padding:.6rem;font-size:13px;cursor:pointer;font-family:'Inter',sans-serif">📷 Escolher foto</button>
       </div>
       <div class="form-actions">
@@ -927,59 +927,150 @@ function syncDataEntrega(){
 // ── FOTO DO PEDIDO ────────────────────────────────────────────────
 // A foto é encolhida antes de salvar. Sem isso, uma foto do celular
 // (3-8 MB) não caberia no banco — o limite por pedido é 1 MB.
-function processarFotoPedido(input){
-  const file=input.files&&input.files[0];
-  if(!file)return;
-  const btn=document.getElementById('fp-foto-btn');
-  btn.textContent='Processando...';btn.disabled=true;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    const img=new Image();
-    img.onload=()=>{
-      const MAX=900;
-      let w=img.width,h=img.height;
-      if(w>h&&w>MAX){h=Math.round(h*MAX/w);w=MAX;}
-      else if(h>=w&&h>MAX){w=Math.round(w*MAX/h);h=MAX;}
-      const cv=document.createElement('canvas');cv.width=w;cv.height=h;
-      cv.getContext('2d').drawImage(img,0,0,w,h);
-      let q=0.72,dados=cv.toDataURL('image/jpeg',q);
-      // Se ainda estiver grande, comprime mais até caber com folga
-      while(dados.length>700000&&q>0.35){q-=0.12;dados=cv.toDataURL('image/jpeg',q);}
-      document.getElementById('fp-foto').value=dados;
-      renderPreviewFoto();
-      btn.textContent='📷 Trocar foto';btn.disabled=false;
-      input.value='';
+const MAX_FOTOS = 4;
+const ORCAMENTO_FOTOS = 720000;   // soma de todas as fotos de um pedido
+let fotosPedido = [];
+
+// Encolhe e comprime até caber no espaço que sobra para cada foto.
+function comprimirFoto(origem, limite){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 900;
+      let w = img.width, h = img.height;
+      if(w > h && w > MAX){ h = Math.round(h * MAX / w); w = MAX; }
+      else if(h >= w && h > MAX){ w = Math.round(w * MAX / h); h = MAX; }
+      const desenhar = (lw, lh) => {
+        const cv = document.createElement('canvas');
+        cv.width = lw; cv.height = lh;
+        cv.getContext('2d').drawImage(img, 0, 0, lw, lh);
+        return cv;
+      };
+      let cv = desenhar(w, h);
+      let q = 0.72, dados = cv.toDataURL('image/jpeg', q);
+      while(dados.length > limite && q > 0.3){ q -= 0.1; dados = cv.toDataURL('image/jpeg', q); }
+      // ainda grande: diminui o tamanho da imagem
+      let tentativas = 0;
+      while(dados.length > limite && tentativas < 4){
+        w = Math.round(w * 0.8); h = Math.round(h * 0.8);
+        cv = desenhar(w, h);
+        q = 0.6; dados = cv.toDataURL('image/jpeg', q);
+        while(dados.length > limite && q > 0.3){ q -= 0.1; dados = cv.toDataURL('image/jpeg', q); }
+        tentativas++;
+      }
+      resolve(dados);
     };
-    img.onerror=()=>{alert('Não consegui ler essa imagem. Tente outra foto.');btn.textContent='📷 Escolher foto';btn.disabled=false;input.value='';};
-    img.src=ev.target.result;
-  };
-  reader.onerror=()=>{alert('Erro ao abrir o arquivo.');btn.textContent='📷 Escolher foto';btn.disabled=false;input.value='';};
-  reader.readAsDataURL(file);
+    img.onerror = () => reject(new Error('imagem inválida'));
+    img.src = origem;
+  });
+}
+
+function lerArquivo(file){
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = ev => resolve(ev.target.result);
+    r.onerror = () => reject(new Error('erro ao abrir o arquivo'));
+    r.readAsDataURL(file);
+  });
+}
+
+// Com mais fotos, cada uma ganha uma fatia menor do espaço.
+async function reequilibrarFotos(){
+  if(!fotosPedido.length) return;
+  const limite = Math.floor(ORCAMENTO_FOTOS / fotosPedido.length);
+  for(let i = 0; i < fotosPedido.length; i++){
+    if(fotosPedido[i].length > limite){
+      try{ fotosPedido[i] = await comprimirFoto(fotosPedido[i], limite); }catch(e){}
+    }
+  }
+}
+
+async function processarFotoPedido(input){
+  const files = Array.from(input.files || []);
+  if(!files.length) return;
+  const btn = document.getElementById('fp-foto-btn');
+  btn.textContent = 'Processando...'; btn.disabled = true;
+
+  const cabem = MAX_FOTOS - fotosPedido.length;
+  if(files.length > cabem) alert(`Cabem mais ${cabem} foto${cabem===1?'':'s'} neste pedido. Vou usar a${cabem===1?'':'s'} primeira${cabem===1?'':'s'}.`);
+
+  for(const file of files.slice(0, Math.max(cabem, 0))){
+    try{
+      const bruto = await lerArquivo(file);
+      const limite = Math.floor(ORCAMENTO_FOTOS / Math.min(fotosPedido.length + 1, MAX_FOTOS));
+      fotosPedido.push(await comprimirFoto(bruto, limite));
+    }catch(e){
+      alert('Não consegui ler essa imagem. Tente outra foto.');
+    }
+  }
+  await reequilibrarFotos();
+  renderPreviewFoto();
+  input.value = '';
+  btn.disabled = false;
+  atualizarBotaoFoto();
+}
+
+function atualizarBotaoFoto(){
+  const btn = document.getElementById('fp-foto-btn');
+  if(!btn) return;
+  const n = fotosPedido.length;
+  if(!n){ btn.textContent = '📷 Escolher foto'; btn.style.display = ''; return; }
+  btn.textContent = n >= MAX_FOTOS ? '📷 Limite de 4 fotos' : `📷 Adicionar foto (${n}/${MAX_FOTOS})`;
+  btn.style.display = n >= MAX_FOTOS ? 'none' : '';
 }
 
 function renderPreviewFoto(){
-  const v=document.getElementById('fp-foto').value;
-  const el=document.getElementById('fp-foto-preview');
-  const btn=document.getElementById('fp-foto-btn');
-  if(!v){el.innerHTML='';if(btn)btn.textContent='📷 Escolher foto';return;}
-  el.innerHTML=`<div style="position:relative;display:inline-block">
-    <img src="${v}" style="max-width:100%;max-height:180px;border-radius:10px;border:1px solid var(--borda);display:block">
-    <button type="button" onclick="removerFotoPedido()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:26px;height:26px;font-size:15px;cursor:pointer;line-height:1">×</button>
-  </div>`;
-  if(btn)btn.textContent='📷 Trocar foto';
+  const el = document.getElementById('fp-foto-preview');
+  document.getElementById('fp-foto').value = fotosPedido[0] || '';
+  if(!el) return;
+  el.innerHTML = fotosPedido.length
+    ? `<div style="display:flex;gap:.4rem;flex-wrap:wrap">${fotosPedido.map((f, i) => `
+        <div style="position:relative">
+          <img src="${f}" onclick="abrirFotoGrande(null,${i})" style="width:92px;height:92px;object-fit:cover;border-radius:10px;border:1px solid var(--borda);display:block;cursor:zoom-in">
+          ${i===0?'<span style="position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,.6);color:#fff;font-size:9.5px;border-radius:4px;padding:1px 5px">capa</span>':''}
+          <button type="button" onclick="removerFotoPedido(${i})" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:24px;height:24px;font-size:14px;cursor:pointer;line-height:1">×</button>
+        </div>`).join('')}</div>`
+    : '';
+  atualizarBotaoFoto();
 }
 
-function removerFotoPedido(){
-  document.getElementById('fp-foto').value='';
+async function removerFotoPedido(i){
+  fotosPedido.splice(i, 1);
+  await reequilibrarFotos();
   renderPreviewFoto();
 }
 
-function abrirFotoGrande(src){
-  const o=document.createElement('div');
-  o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:2000;display:flex;align-items:center;justify-content:center;padding:1rem;cursor:zoom-out';
-  o.innerHTML=`<img src="${src}" style="max-width:100%;max-height:100%;border-radius:8px">`;
-  o.onclick=()=>o.remove();
+// Galeria: abre uma foto e passa para as outras do mesmo pedido
+function abrirFotoGrande(src, indice, lista){
+  const fotos = lista || (src ? [src] : fotosPedido);
+  let i = indice || 0;
+  if(!fotos.length) return;
+  const o = document.createElement('div');
+  o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:2000;display:flex;align-items:center;justify-content:center;padding:1rem;cursor:zoom-out';
+  const pintar = () => {
+    o.innerHTML = `<img src="${fotos[i]}" style="max-width:100%;max-height:100%;border-radius:8px">`
+      + (fotos.length > 1 ? `
+        <button style="position:absolute;left:10px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.9);border:none;border-radius:50%;width:44px;height:44px;font-size:20px;cursor:pointer">‹</button>
+        <button style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.9);border:none;border-radius:50%;width:44px;height:44px;font-size:20px;cursor:pointer">›</button>
+        <div style="position:absolute;bottom:18px;left:0;right:0;text-align:center;color:#fff;font-size:13px">${i+1} de ${fotos.length}</div>` : '');
+    const bts = o.querySelectorAll('button');
+    if(bts[0]) bts[0].onclick = e => { e.stopPropagation(); i = (i - 1 + fotos.length) % fotos.length; pintar(); };
+    if(bts[1]) bts[1].onclick = e => { e.stopPropagation(); i = (i + 1) % fotos.length; pintar(); };
+  };
+  pintar();
+  o.onclick = () => o.remove();
   document.body.appendChild(o);
+}
+
+function fotosDoPedido(p){
+  if(!p) return [];
+  if(Array.isArray(p.fotos) && p.fotos.length) return p.fotos;
+  return p.foto ? [p.foto] : [];
+}
+function abrirFotosDoPedido(cliId, pedId){
+  const c = clientes.find(x => x.id === cliId);
+  const p = c && (c.pedidos || []).find(x => x.id === pedId);
+  abrirFotoGrande(null, 0, fotosDoPedido(p));
 }
 
 function marcarEntregaManual(){document.getElementById('fp-data').dataset.auto='';}
@@ -1693,7 +1784,11 @@ function renderDetalhe(c,peds,vinculos){
         ${p.status==='finalizado-problema'&&(p.problemaTipo||p.problemaObs)?`<div style="font-size:12px;color:#a02020;background:#fde8e8;border-radius:8px;padding:.45rem .6rem;margin-top:.4rem">${p.problemaTipo?`<strong>${p.problemaTipo}</strong>`:''}${p.problemaTipo&&p.problemaObs?' · ':''}${p.problemaObs||''}</div>`:''}
         ${p.itens?.length>1?`<div style="margin:.35rem 0;padding:.4rem .6rem;background:var(--branco);border-radius:6px;font-size:12px">${p.itens.map(it=>`<div style="display:flex;justify-content:space-between;padding:.15rem 0;border-bottom:1px solid var(--borda)"><span>${it.produto}</span><span style="color:var(--verde);font-weight:500">${fmt(it.valor)}</span></div>`).join('')}</div>`:''}
         ${isCan&&p.valorRetido>0?`<div style="font-size:12px;color:var(--danger);font-weight:500;margin-bottom:.3rem">💰 Retido: ${fmt(p.valorRetido)}</div>`:''}
-        ${p.foto?`<img src="${p.foto}" onclick="abrirFotoGrande(this.src)" title="Toque para ampliar" style="float:right;width:54px;height:54px;object-fit:cover;border-radius:8px;margin:0 0 .35rem .5rem;cursor:zoom-in;border:1px solid var(--borda)">`:''}
+        ${(()=>{const fs=fotosDoPedido(p);if(!fs.length)return '';
+          return `<div style="float:right;position:relative;margin:0 0 .35rem .5rem" onclick="abrirFotosDoPedido('${c.id}','${p.id}')" title="Toque para ver ${fs.length>1?'as fotos':'a foto'}">
+            <img src="${fs[0]}" style="width:54px;height:54px;object-fit:cover;border-radius:8px;cursor:zoom-in;border:1px solid var(--borda);display:block">
+            ${fs.length>1?`<span style="position:absolute;bottom:-3px;right:-3px;background:var(--verde);color:#fff;font-size:10px;font-weight:600;border-radius:10px;padding:1px 6px;border:2px solid var(--branco)">${fs.length}</span>`:''}
+          </div>`;})()}
         <div class="pedido-meta">
           ${p.dataConfirmacao?`<span>📋 ${exibeData(p.dataConfirmacao)}</span>`:''}
           ${p.data?`<span>🚚 ${exibeData(p.data)}</span>`:''}
@@ -2069,7 +2164,7 @@ function abrirFormPedido(cliId,pedido=null){
   document.getElementById('fp-retido').value=pedido?.valorRetido||'';
   document.getElementById('fp-data-conf').value=pedido?.dataConfirmacao||'';
   document.getElementById('fp-data').value=pedido?.data||'';
-  document.getElementById('fp-foto').value=pedido?.foto||'';
+  fotosPedido=fotosDoPedido(pedido).slice(0,MAX_FOTOS);
   renderPreviewFoto();
   // Ao editar um pedido que já tem entrega, ela não acompanha mais a confirmação
   document.getElementById('fp-data').dataset.auto=pedido?.data?'':'1';
@@ -2171,7 +2266,7 @@ async function salvarPedido(){
     }
   }
 
-  const dados={produto,valor,itens,entrega:parseFloat(document.getElementById('fp-entrega')?.value)||0,data:document.getElementById('fp-data')?.value||'',dataConfirmacao:document.getElementById('fp-data-conf')?.value||'',status,valorRetido:status==='cancelado'?(parseFloat(document.getElementById('fp-retido')?.value)||0):0,problemaTipo:status==='finalizado-problema'?(document.getElementById('fp-problema-tipo')?.value==='__outro'?'Outro':(document.getElementById('fp-problema-tipo')?.value||'')):'',problemaObs:status==='finalizado-problema'?(document.getElementById('fp-problema-obs')?.value.trim()||''):'',ocasiao:document.getElementById('fp-ocasiao')?.value||'',anivNome:document.getElementById('fp-ocasiao')?.value==='aniversario'?capitalizarNome(document.getElementById('fp-aniv-nome')?.value.trim()||''):'',anivId:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-id')?.value||''):'',anivData:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-data')?.value||''):'',remetente:capitalizarNome(document.getElementById('fp-remetente')?.value.trim()||''),destNome:capitalizarNome(document.getElementById('fp-dest-nome')?.value.trim()||''),destId,destTel:document.getElementById('fp-dest-tel')?.value?.trim()||'',destLogradouro:destLogr,destNumero:destNum,destComplemento:destComp,destBairro,destEnd:[destLogr,destNum,destComp].filter(Boolean).join(', '),obs:document.getElementById('fp-obs')?.value.trim()||'',foto:document.getElementById('fp-foto')?.value||'',atualizado:new Date().toISOString()};
+  const dados={produto,valor,itens,entrega:parseFloat(document.getElementById('fp-entrega')?.value)||0,data:document.getElementById('fp-data')?.value||'',dataConfirmacao:document.getElementById('fp-data-conf')?.value||'',status,valorRetido:status==='cancelado'?(parseFloat(document.getElementById('fp-retido')?.value)||0):0,problemaTipo:status==='finalizado-problema'?(document.getElementById('fp-problema-tipo')?.value==='__outro'?'Outro':(document.getElementById('fp-problema-tipo')?.value||'')):'',problemaObs:status==='finalizado-problema'?(document.getElementById('fp-problema-obs')?.value.trim()||''):'',ocasiao:document.getElementById('fp-ocasiao')?.value||'',anivNome:document.getElementById('fp-ocasiao')?.value==='aniversario'?capitalizarNome(document.getElementById('fp-aniv-nome')?.value.trim()||''):'',anivId:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-id')?.value||''):'',anivData:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-data')?.value||''):'',remetente:capitalizarNome(document.getElementById('fp-remetente')?.value.trim()||''),destNome:capitalizarNome(document.getElementById('fp-dest-nome')?.value.trim()||''),destId,destTel:document.getElementById('fp-dest-tel')?.value?.trim()||'',destLogradouro:destLogr,destNumero:destNum,destComplemento:destComp,destBairro,destEnd:[destLogr,destNum,destComp].filter(Boolean).join(', '),obs:document.getElementById('fp-obs')?.value.trim()||'',foto:fotosPedido[0]||'',fotos:fotosPedido.slice(),atualizado:new Date().toISOString()};
   itens.forEach(it=>{if(it.produto)autoSalvarCadastro('produto',it.produto);});
   if(status==='finalizado-problema'){
     const _pt=document.getElementById('fp-problema-tipo')?.value||'';
