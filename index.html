@@ -1068,10 +1068,12 @@ function fotosDoPedido(p){
   if(Array.isArray(p.fotos) && p.fotos.length) return p.fotos;
   return p.foto ? [p.foto] : [];
 }
-function abrirFotosDoPedido(cliId, pedId, i){
-  const c = clientes.find(x => x.id === cliId);
-  const p = c && (c.pedidos || []).find(x => x.id === pedId);
-  abrirFotoGrande(null, i || 0, fotosDoPedido(p));
+// As fotos de cada pedido desenhado na tela ficam guardadas aqui: os pedidos
+// vêm de outra consulta, então não dá para procurá-los dentro do cliente.
+const fotosNaTela = {};
+function abrirFotosDoPedido(pedId, i){
+  const fs = fotosNaTela[pedId] || [];
+  if(fs.length) abrirFotoGrande(null, i || 0, fs);
 }
 
 function marcarEntregaManual(){document.getElementById('fp-data').dataset.auto='';}
@@ -1786,9 +1788,10 @@ function renderDetalhe(c,peds,vinculos){
         ${p.itens?.length>1?`<div style="margin:.35rem 0;padding:.4rem .6rem;background:var(--branco);border-radius:6px;font-size:12px">${p.itens.map(it=>`<div style="display:flex;justify-content:space-between;padding:.15rem 0;border-bottom:1px solid var(--borda)"><span>${it.produto}</span><span style="color:var(--verde);font-weight:500">${fmt(it.valor)}</span></div>`).join('')}</div>`:''}
         ${isCan&&p.valorRetido>0?`<div style="font-size:12px;color:var(--danger);font-weight:500;margin-bottom:.3rem">💰 Retido: ${fmt(p.valorRetido)}</div>`:''}
         ${(()=>{const fs=fotosDoPedido(p);if(!fs.length)return '';
+          fotosNaTela[p.id]=fs;
           const tam=fs.length>2?46:54;
           return `<div style="float:right;display:flex;gap:.25rem;margin:0 0 .35rem .5rem" title="Toque para ampliar">
-            ${fs.map((f,i)=>`<img src="${f}" onclick="abrirFotosDoPedido('${c.id}','${p.id}',${i})" style="width:${tam}px;height:${tam}px;object-fit:cover;border-radius:8px;cursor:zoom-in;border:1px solid var(--borda);display:block">`).join('')}
+            ${fs.map((f,i)=>`<img src="${f}" onclick="event.stopPropagation();abrirFotosDoPedido('${p.id}',${i})" style="width:${tam}px;height:${tam}px;object-fit:cover;border-radius:8px;cursor:zoom-in;border:1px solid var(--borda);display:block">`).join('')}
           </div>`;})()}
         <div class="pedido-meta">
           ${p.dataConfirmacao?`<span>📋 ${exibeData(p.dataConfirmacao)}</span>`:''}
