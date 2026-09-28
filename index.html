@@ -1855,6 +1855,16 @@ async function verDetalhe(id){
   }
 }
 
+/* Quem trouxe quem. Antes os dois lados diziam quase a mesma coisa,
+   e dava a impressão de duas indicações quando era só uma, ida e volta. */
+function textoLaco(v){
+  if(v.tipo!=='indicacao')return v.detalhe||'';
+  const d=(v.detalhe||'').toLowerCase();
+  if(d.includes('indicou este'))return 'trouxe esta cliente';
+  if(d.includes('indicado por')||d.includes('foi indicado'))return 'foi trazida por esta cliente';
+  return v.detalhe||'';
+}
+
 function renderDetalhe(c,peds,vinculos){
   const wNum=c.whats?.replace(/\D/g,'');
   const pts=calcPontos(peds);
@@ -1903,7 +1913,8 @@ function renderDetalhe(c,peds,vinculos){
   </div>`;
 
   if(c.indicadoPorNome)html+=`<div class="det-full"><div class="lbl">Indicado por</div><div class="val">🌟 ${c.indicadoPorNome}</div></div>`;
-  if(c.totalIndicacoes>0)html+=`<div class="det-full"><div class="lbl">Indicações feitas</div><div class="val">🌟 Indicou ${c.totalIndicacoes} cliente${c.totalIndicacoes!==1?'s':''}</div></div>`;
+  const trouxe=clientes.filter(x=>x.indicadoPorId===c.id);
+  if(trouxe.length)html+=`<div class="det-full"><div class="lbl">Indicações feitas</div><div class="val">🌟 Trouxe ${trouxe.length} cliente${trouxe.length!==1?'s':''}: ${trouxe.map(x=>x.nome).join(', ')}</div></div>`;
   const end=[c.endereco,c.bairro].filter(Boolean).join(' · ');
   if(end)html+=`<div class="det-full"><div class="lbl">Endereço</div><div class="val">${end}</div></div>`;
   if(c.instagram)html+=`<div class="det-full"><div class="lbl">Instagram</div><div class="val">${c.instagram}</div></div>`;
@@ -1928,7 +1939,7 @@ function renderDetalhe(c,peds,vinculos){
       <div class="vinculo-avatar" style="background:${avatarCor(pv.nome)}">${iniciais(pv.nome)}</div>
       <div class="vinculo-info">
         <div class="vinculo-nome">${pv.nome}</div>
-        ${pv.lacos.map(v => `<div class="vinculo-tipo">${vinculoLabel(v.tipo)}${v.detalhe ? ' · ' + v.detalhe : ''}
+        ${pv.lacos.map(v => `<div class="vinculo-tipo">${vinculoLabel(v.tipo)}${textoLaco(v) ? ' · ' + textoLaco(v) : ''}
           ${pv.lacos.length > 1 ? `<button class="btn-sm btn-sm-del" style="padding:0 .3rem;font-size:10px;margin-left:.25rem"
             title="Remover só este laço" onclick="removerVinculo('${c.id}','${v.id}','${v.idVinculado}')">×</button>` : ''}</div>`).join('')}
       </div>
@@ -2054,8 +2065,9 @@ function salvarCliente(){
           await db.collection('clientes').doc(novoId).collection('vinculos').add(vinA);
           await db.collection('clientes').doc(indicadoPorId).collection('vinculos').add(vinB);
           // Atualiza contador de indicações
-          const indSnap=await db.collection('clientes').doc(indicadoPorId).collection('vinculos').where('tipo','==','indicacao').get();
-          await db.collection('clientes').doc(indicadoPorId).update({totalIndicacoes:indSnap.size});
+          // conta só quem realmente foi trazido por esta pessoa
+          const quantos=clientes.filter(x=>x.indicadoPorId===indicadoPorId).length+1;
+          await db.collection('clientes').doc(indicadoPorId).update({totalIndicacoes:quantos});
         }
       }
     }
@@ -2624,8 +2636,11 @@ async function salvarVinculo(){
   const detalhe=document.getElementById('fv-detalhe').value.trim();
   if(!vinculoDestino){alert('Selecione um cliente.');return;}
   const c=clientes.find(x=>x.id===cliId);
-  const vinA={idVinculado:vinculoDestino.id,nomeVinculado:vinculoDestino.nome,tipo,detalhe,criado:new Date().toISOString()};
-  const vinB={idVinculado:cliId,nomeVinculado:c?.nome||'',tipo,detalhe,criado:new Date().toISOString()};
+  // na indicação, cada lado guarda o seu papel: quem trouxe e quem foi trazido
+  const detA=tipo==='indicacao'?'Indicou este cliente':detalhe;
+  const detB=tipo==='indicacao'?'Indicado por':detalhe;
+  const vinA={idVinculado:vinculoDestino.id,nomeVinculado:vinculoDestino.nome,tipo,detalhe:detA,criado:new Date().toISOString()};
+  const vinB={idVinculado:cliId,nomeVinculado:c?.nome||'',tipo,detalhe:detB,criado:new Date().toISOString()};
   await db.collection('clientes').doc(cliId).collection('vinculos').add(vinA);
   await db.collection('clientes').doc(vinculoDestino.id).collection('vinculos').add(vinB);
 
@@ -2645,10 +2660,10 @@ async function salvarVinculo(){
         indicadoPorId:vinculoDestino.id,
         indicadoPorNome:vinculoDestino.nome
       });
-      const indSnap=await db.collection('clientes').doc(vinculoDestino.id)
-        .collection('vinculos').where('tipo','==','indicacao').get();
+      const quantos=clientes.filter(x=>x.indicadoPorId===vinculoDestino.id).length
+        +(c&&c.indicadoPorId===vinculoDestino.id?0:1);
       await db.collection('clientes').doc(vinculoDestino.id)
-        .update({totalIndicacoes:indSnap.size});
+        .update({totalIndicacoes:quantos});
     }
   }
 
