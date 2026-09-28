@@ -71,6 +71,10 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
 .tag-frequente{background:var(--verde-bg);color:var(--verde)}
 .tag-eventual{background:#f4ede8;color:#8a5c3e}
 .tag-corporativo{background:#eae8f4;color:#4a3e8a}
+.tag-lead{background:#fdf1dc;color:#8a6a1e}
+.lead-btn{background:var(--creme2);border:1px solid var(--borda);border-radius:50%;width:34px;height:34px;flex:none;font-size:15px;cursor:pointer;opacity:.45;filter:grayscale(1);transition:.15s;padding:0}
+.lead-btn:hover{opacity:.9}
+.lead-btn.on{opacity:1;filter:none;background:#fdf1dc;border-color:#e6cf9a}
 .tag-novo{background:var(--rosa-bg);color:#8a3e55}
 .pontos-badge{font-size:11px;color:var(--dourado);margin-top:2px;font-weight:500}
 .recebeu-badge{font-size:11px;color:var(--azul);margin-top:2px}
@@ -379,7 +383,7 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
     <div class="stat"><div class="stat-num" id="s-total">0</div><div class="stat-label">Clientes</div></div>
     <div class="stat"><div class="stat-num" id="s-pedidos">0</div><div class="stat-label">Pedidos</div></div>
     <div class="stat"><div class="stat-num" id="s-ticket">R$0</div><div class="stat-label">Ticket médio</div></div>
-    <div class="stat"><div class="stat-num" id="s-freq">0</div><div class="stat-label">Frequentes</div></div>
+    <div class="stat" onclick="filtrarLeads()" style="cursor:pointer"><div class="stat-num" id="s-leads">0</div><div class="stat-label">🌱 Leads</div></div>
   </div>
   <div class="filtros">
     <div class="filtros-row">
@@ -390,6 +394,7 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
         <option value="eventual">Eventual</option>
         <option value="corporativo">Corporativo</option>
         <option value="novo">Novo</option>
+        <option value="__lead">🌱 Lead (nunca comprou)</option>
       </select>
     </div>
     <div class="filtros-row">
@@ -634,7 +639,11 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
         <span style="font-size:13px;font-weight:500;color:var(--cinza)">Total produtos</span>
         <span style="font-size:15px;font-weight:600;color:var(--verde)" id="fp-total-label">R$ 0,00</span>
       </div>
-      <div class="fs"><label>Frete (R$)</label><input type="number" id="fp-entrega" placeholder="0,00" min="0" step="0.01"></div>
+      <div class="fs"><label>Frete (R$)</label><input type="number" id="fp-entrega" placeholder="0,00" min="0" step="0.01" oninput="calcTotalItens()"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;background:var(--verde-bg);border:1px solid var(--verde-claro);border-radius:8px;padding:.6rem .8rem;margin:-.3rem 0 .75rem">
+        <span style="font-size:13px;font-weight:600;color:var(--verde)">Total com entrega</span>
+        <span style="font-size:17px;font-weight:700;color:var(--verde)" id="fp-total-geral">R$ 0,00</span>
+      </div>
       <div class="frow">
         <div class="fs"><label>Confirmação</label><input type="date" id="fp-data-conf" onchange="syncDataEntrega()"></div>
         <div class="fs"><label>Entrega</label><input type="date" id="fp-data" onchange="marcarEntregaManual()"></div>
@@ -1430,7 +1439,8 @@ async function filtrar(){
   if(ocasiao||produto||dataF) await getPedidosTodos();
   filtrados=clientes.filter(c=>{
     if(q&&!c.nome?.toLowerCase().includes(q)&&!c.whats?.includes(q))return false;
-    if(perfil&&c.tag!==perfil)return false;
+    if(perfil==='__lead'){ if(!c.lead)return false; }
+    else if(perfil&&c.tag!==perfil)return false;
     if(ocasiao||produto||dataF){
       const peds=pedidosPorCliente[c.id]||[];
       if(ocasiao&&!peds.some(p=>p.ocasiao?.toLowerCase().includes(ocasiao)))return false;
@@ -1440,6 +1450,11 @@ async function filtrar(){
     return true;
   });
   atualizarStats();renderCards();
+}
+function filtrarLeads(){
+  const sel=document.getElementById('f-perfil');
+  sel.value=sel.value==='__lead'?'':'__lead';
+  filtrar();
 }
 function limparFiltros(){['f-busca','f-perfil','f-ocasiao','f-produto','f-data'].forEach(id=>document.getElementById(id).value='');filtrar();}
 
@@ -1451,7 +1466,8 @@ function atualizarStats(){
   document.getElementById('s-total').textContent=clientes.length;
   document.getElementById('s-pedidos').textContent=totalPeds;
   document.getElementById('s-ticket').textContent=ticketM>0?'R$'+Math.round(ticketM):'R$0';
-  document.getElementById('s-freq').textContent=clientes.filter(c=>c.tag==='frequente').length;
+  const elLeads=document.getElementById('s-leads');
+  if(elLeads)elLeads.textContent=clientes.filter(c=>c.lead).length;
 }
 
 // ── ALERTAS MINI (na aba clientes) ────────────────────
@@ -1485,7 +1501,10 @@ function renderCards(){
         <div class="cli-nome">${anivDias!==null?'🎂 ':''  }${c.nome}</div>
         <div class="cli-sub">${c.bairro||c.whats||'—'}</div>
       </div>
+      <button class="lead-btn${c.lead?' on':''}" title="${c.lead?'É um lead: já falou com você, mas nunca comprou. Toque para tirar.':'Marcar como lead (já entrou em contato, nunca comprou)'}"
+        onclick="event.stopPropagation();alternarLead('${c.id}',this)">🌱</button>
       <div class="cli-right">
+        ${c.lead?'<span class="tag tag-lead">Lead</span>':''}
         <span class="tag ${tagClass(c.tag)}">${tagLabel(c.tag)}</span>
         <div class="cli-sub" style="margin-top:3px">${nPeds} pedido${nPeds!==1?'s':''}</div>
         ${nRec>0?`<div class="recebeu-badge">🎁 recebeu ${nRec}x</div>`:''}
@@ -1494,6 +1513,27 @@ function renderCards(){
       </div>
     </div>`;
   }).join('');
+}
+
+/* Marca/desmarca o cliente como LEAD direto na lista, sem abrir a ficha.
+   Lead = já entrou em contato (ou pediu orçamento) mas nunca comprou. */
+async function alternarLead(id,botao){
+  const c=clientes.find(x=>x.id===id);
+  if(!c)return;
+  const novo=!c.lead;
+  c.lead=novo;
+  if(botao){ botao.classList.toggle('on',novo); botao.disabled=true; }
+  try{
+    await db.collection('clientes').doc(id).update({lead:novo,atualizado:new Date().toISOString()});
+    renderCards();
+    atualizarStats();
+  }catch(e){
+    c.lead=!novo;
+    if(botao){ botao.classList.toggle('on',!novo); }
+    alert('Não consegui salvar agora. Confira a internet e tente de novo.');
+    console.error(e);
+  }
+  if(botao)botao.disabled=false;
 }
 
 // ── ALERTAS ───────────────────────────────────────────
@@ -2213,6 +2253,15 @@ function calcTotalItens(){
   const total = Array.from(document.querySelectorAll('.item-valor')).reduce((s,el)=>s+(parseFloat(el.value)||0),0);
   const label = document.getElementById('fp-total-label');
   if(label) label.textContent = 'R$ '+total.toFixed(2).replace('.',',');
+  // total com o frete, só para conferir na hora de cobrar
+  const frete = parseFloat(document.getElementById('fp-entrega')?.value)||0;
+  const geral = document.getElementById('fp-total-geral');
+  if(geral){
+    geral.textContent = 'R$ '+(total+frete).toFixed(2).replace('.',',');
+    const dono = geral.parentElement;
+    const span = dono.querySelector('span');
+    span.textContent = frete>0 ? `Total com entrega (frete R$ ${frete.toFixed(2).replace('.',',')})` : 'Total com entrega';
+  }
 }
 
 
@@ -2248,6 +2297,7 @@ function abrirFormPedido(cliId,pedido=null){
   const itens = pedido?.itens?.length ? pedido.itens : (pedido?.produto ? [{produto: pedido.produto, valor: pedido?.valor||0}] : [{produto:'',valor:''}]);
   renderItensPedido(itens);
   document.getElementById('fp-entrega').value=pedido?.entrega||'';
+  calcTotalItens();
   document.getElementById('fp-retido').value=pedido?.valorRetido||'';
   document.getElementById('fp-data-conf').value=pedido?.dataConfirmacao||'';
   document.getElementById('fp-data').value=pedido?.data||'';
@@ -2837,24 +2887,38 @@ function opDestinatarios(vendas){
     const tel=(v.destTel||'').replace(/\D/g,'');
     if(nomesCli.has(normProd(nome))||(tel&&jaCliente.has(tel)))return;
     const k=normProd(nome)+'|'+tel;
-    if(!mapa[k])mapa[k]={nome,tel,vezes:0,quem:new Set(),bairro:v.destBairro||'',ultima:v.data};
+    if(!mapa[k])mapa[k]={nome,tel,vezes:0,quem:new Set(),quemId:'',bairro:v.destBairro||'',ultima:v.data};
     mapa[k].vezes++;
     const c=clientes.find(x=>x.id===v.cliId);
-    if(c)mapa[k].quem.add(c.nome);
+    if(c){ mapa[k].quem.add(c.nome); if(!mapa[k].quemId)mapa[k].quemId=c.id; }
     if((v.data||'')>(mapa[k].ultima||''))mapa[k].ultima=v.data;
   });
   const lista=Object.values(mapa).sort((a,b)=>b.vezes-a.vezes||(b.ultima||'').localeCompare(a.ultima||''));
   const corpo=lista.length?lista.slice(0,30).map(d=>`<div class="op-linha">
-      <div class="op-linha-info">
-        <div class="op-nome">${d.nome}${d.vezes>1?` <span class="op-tag" style="background:var(--verde)">${d.vezes}x presenteada</span>`:''}</div>
-        <div class="op-meta">${d.tel?d.tel:'sem telefone'} · presente de ${[...d.quem].slice(0,2).join(', ')||'—'}${d.bairro?' · '+d.bairro:''}</div>
-      </div>${opZap(d.tel,`Oi ${d.nome.split(' ')[0]}! Aqui é a Manu, da Confeitos da Manu 🌿 Você recebeu um presente nosso e queria te dar as boas-vindas. Posso te mandar as novidades?`)}</div>`).join('')
+      <div class="op-linha-info" onclick="${d.quemId?`verDetalhe('${d.quemId}')`:''}" title="${d.quemId?'Abrir a ficha de quem presenteou':''}">
+        <div class="op-nome">${d.nome}${d.vezes>1?` <span class="op-tag" style="background:var(--verde)">${d.vezes} presentes</span>`:''}</div>
+        <div class="op-meta">${d.tel?d.tel:'sem telefone'} · presente de ${[...d.quem].slice(0,2).join(', ')||'—'}${d.bairro?' · '+d.bairro:''} ${d.quemId?'· toque para abrir a ficha de quem deu':''}</div>
+      </div>
+      <button class="btn-sm" onclick="opCadastrarDestinatario('${jsAspas(d.nome)}','${jsAspas(d.tel)}','${jsAspas(d.bairro)}')">➕ Cadastrar</button>
+      ${opZap(d.tel,`Oi ${d.nome.split(' ')[0]}! Aqui é a Manu, da Confeitos da Manu 🌿 Você recebeu um presente nosso e queria te dar as boas-vindas. Posso te mandar as novidades?`)}</div>`).join('')
     :opVazio('Nenhum destinatário novo. Preencha o nome e o WhatsApp de quem recebe o presente para essa lista encher.');
   return opCard('🎁 Quem recebeu presente e ainda não é sua cliente',
     lista.length?`${lista.length} pessoas já receberam algo seu`:'',
     corpo,
     'Quem recebeu e amou é a lista mais barata de converter: já conhece o produto e a sua entrega.');
 }
+
+// Abre o cadastro de cliente já com o nome de quem recebeu o presente
+function opCadastrarDestinatario(nome,tel,bairro){
+  abrirFormCliente();
+  document.getElementById('fc-nome').value=nome||'';
+  document.getElementById('fc-whats').value=tel||'';
+  if(bairro)document.getElementById('fc-bairro').value=bairro;
+  const o=document.getElementById('fc-origem');
+  if(o&&!o.value)o.value=[...o.options].some(x=>x.value==='Indicação')?'Indicação':o.value;
+  toggleIndicacao(o?o.value:'');
+}
+function jsAspas(v){ return String(v==null?'':v).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
 
 /* 4. COMBOS: o que a mesma pessoa leva junto — vira kit pronto */
 function opCombos(vendas){
