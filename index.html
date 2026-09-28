@@ -666,7 +666,37 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
         </div>
         <div class="frow">
           <div class="fs"><label>Detalhes (opcional)</label>
-            <input type="text" id="fp-problema-obs" placeholder="O que aconteceu, como resolveu...">
+            <input type="text" id="fp-problema-obs" placeholder="O que aconteceu">
+          </div>
+        </div>
+        <div class="frow">
+          <div class="fs"><label>O que foi feito para resolver</label>
+            <select id="fp-problema-solucao-tipo">
+              <option value="">— escolha —</option>
+              <option>Refiz o produto</option>
+              <option>Enviei o item que faltava</option>
+              <option>Reentreguei</option>
+              <option>Devolvi o valor</option>
+              <option>Devolvi parte do valor</option>
+              <option>Desconto na próxima compra</option>
+              <option>Brinde na próxima compra</option>
+              <option>Pedi desculpas, cliente aceitou</option>
+              <option>Nada foi feito ainda</option>
+              <option value="Outro">Outro (escrevo abaixo)</option>
+            </select>
+          </div>
+          <div class="fs"><label>Resolvido?</label>
+            <select id="fp-problema-resolvido">
+              <option value="">— </option>
+              <option value="sim">✅ Sim, cliente satisfeita</option>
+              <option value="parcial">🟡 Em parte</option>
+              <option value="nao">❌ Ainda em aberto</option>
+            </select>
+          </div>
+        </div>
+        <div class="frow">
+          <div class="fs"><label>Detalhes da solução (opcional)</label>
+            <input type="text" id="fp-problema-solucao-obs" placeholder="Ex: refiz e entreguei no dia seguinte, sem cobrar o frete">
           </div>
         </div>
       </div>
@@ -927,6 +957,7 @@ let appIniciado=false;
 function iniciarApp(){
   if(appIniciado)return;
   appIniciado=true;
+  window.addEventListener('error',e=>{ console.error('erro na tela:',e.message); });
   document.getElementById('data-hoje').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})+' · v14';
   inicializarListeners();
   preencherSelectsDeOcasiao();
@@ -939,7 +970,9 @@ function iniciarApp(){
 if(sessionStorage.getItem('auth')==='ok'){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app-content').style.display='block';
-  setTimeout(iniciarApp,0);
+  // try/catch: se algo falhar no início (banco fora do ar, por exemplo),
+  // o resto do app continua funcionando em vez de travar os botões.
+  setTimeout(()=>{ try{ iniciarApp(); }catch(e){ console.error('início:',e); } },0);
 }
 
 function inicializarListeners(){
@@ -1460,9 +1493,15 @@ function limparFiltros(){['f-busca','f-perfil','f-ocasiao','f-produto','f-data']
 
 // ── STATS ─────────────────────────────────────────────
 function atualizarStats(){
-  const totalPeds=Object.values(pedidosPorCliente).reduce((s,p)=>s+p.filter(x=>x.status?.startsWith('finalizado')).length,0);
-  const tickets=clientes.map(c=>calcTicket(pedidosPorCliente[c.id]||[])).filter(t=>t>0);
-  const ticketM=tickets.length?tickets.reduce((a,b)=>a+b,0)/tickets.length:0;
+  // Ticket medio geral = soma de todas as vendas / numero de vendas.
+  // Pedidos com valor 0 (brinde, troca, resgate) ficam de fora dos dois lados,
+  // senao eles puxam a media pra baixo sem terem sido venda.
+  const vendasValidas=Object.values(pedidosPorCliente).flat().filter(p=>
+    (p.status==='finalizado-ok'||p.status==='finalizado-problema') &&
+    (Number(p.valor)||0)>0 &&
+    !p.produto?.startsWith('🎁 Resgate'));
+  const totalPeds=vendasValidas.length;
+  const ticketM=totalPeds?vendasValidas.reduce((s,p)=>s+(Number(p.valor)||0),0)/totalPeds:0;
   document.getElementById('s-total').textContent=clientes.length;
   document.getElementById('s-pedidos').textContent=totalPeds;
   document.getElementById('s-ticket').textContent=ticketM>0?'R$'+Math.round(ticketM):'R$0';
@@ -1874,8 +1913,30 @@ function renderDetalhe(c,peds,vinculos){
   html+=`<div class="det-actions"><button class="btn-edit" onclick="fechar('modal-detalhe');abrirFormCliente(${JSON.stringify(c).replace(/"/g,'&quot;')})">✏️ Editar</button><button class="btn-del" onclick="excluirCliente('${c.id}')">🗑</button></div>`;
 
   // VÍNCULOS
-  html+=`<div style="margin-top:1.25rem"><div class="section-title">🔗 Vínculos (${vinculos.length})</div>`;
-  html+=vinculos.length?vinculos.map(v=>`<div class="vinculo-card"><div class="vinculo-avatar" style="background:${avatarCor(v.nomeVinculado)}">${iniciais(v.nomeVinculado)}</div><div class="vinculo-info"><div class="vinculo-nome">${v.nomeVinculado}</div><div class="vinculo-tipo">${vinculoLabel(v.tipo)}${v.detalhe?' · '+v.detalhe:''}</div></div><div style="display:flex;gap:.4rem"><button class="btn-sm" onclick="fechar('modal-detalhe');setTimeout(()=>verDetalhe('${v.idVinculado}'),100)">Ver</button><button class="btn-sm btn-sm-del" onclick="removerVinculo('${c.id}','${v.id}','${v.idVinculado}')">×</button></div></div>`).join(''):`<p style="font-size:13px;color:var(--muted);padding:.5rem 0">Nenhum vínculo.</p>`;
+  /* A mesma pessoa pode ser parente E quem indicou. Aqui ela aparece
+     uma vez só, com os dois laços na mesma linha. A contagem é de pessoas. */
+  const vincPorPessoa = {};
+  vinculos.forEach(v => {
+    const k = v.idVinculado || ('nome:' + (v.nomeVinculado || ''));
+    if (!vincPorPessoa[k]) vincPorPessoa[k] = { nome: v.nomeVinculado, idVinculado: v.idVinculado, lacos: [] };
+    vincPorPessoa[k].lacos.push(v);
+  });
+  const pessoasVinculadas = Object.values(vincPorPessoa);
+  html += `<div style="margin-top:1.25rem"><div class="section-title">🔗 Vínculos (${pessoasVinculadas.length})</div>`;
+  html += pessoasVinculadas.length ? pessoasVinculadas.map(pv => `
+    <div class="vinculo-card">
+      <div class="vinculo-avatar" style="background:${avatarCor(pv.nome)}">${iniciais(pv.nome)}</div>
+      <div class="vinculo-info">
+        <div class="vinculo-nome">${pv.nome}</div>
+        ${pv.lacos.map(v => `<div class="vinculo-tipo">${vinculoLabel(v.tipo)}${v.detalhe ? ' · ' + v.detalhe : ''}
+          ${pv.lacos.length > 1 ? `<button class="btn-sm btn-sm-del" style="padding:0 .3rem;font-size:10px;margin-left:.25rem"
+            title="Remover só este laço" onclick="removerVinculo('${c.id}','${v.id}','${v.idVinculado}')">×</button>` : ''}</div>`).join('')}
+      </div>
+      <div style="display:flex;gap:.4rem">
+        <button class="btn-sm" onclick="fechar('modal-detalhe');setTimeout(()=>verDetalhe('${pv.idVinculado}'),100)">Ver</button>
+        ${pv.lacos.length === 1 ? `<button class="btn-sm btn-sm-del" onclick="removerVinculo('${c.id}','${pv.lacos[0].id}','${pv.lacos[0].idVinculado}')">×</button>` : ''}
+      </div>
+    </div>`).join('') : `<p style="font-size:13px;color:var(--muted);padding:.5rem 0">Nenhum vínculo ainda.</p>`;
   html+=`<button class="btn-add-vinculo" onclick="abrirModalVinculo('${c.id}')">+ Adicionar vínculo</button></div>`;
 
   // RECEBIMENTOS
@@ -1907,7 +1968,11 @@ function renderDetalhe(c,peds,vinculos){
         <div class="pedido-head"><div class="pedido-produto">${isCan?'<s>':''}${p.produto||'Produto'}${isCan?'</s>':''}</div>
         <div style="text-align:right"><div class="pedido-valor" style="${isCan?'text-decoration:line-through;color:var(--muted)':''}">${fmt(total)}</div>
         <span class="pedido-status status-${p.status||'finalizado-ok'}">${{'finalizado-ok':'✅ Ok','finalizado-problema':'⚠️ Problema','cancelado':'❌ Cancelado'}[p.status]||'Ok'}</span></div></div>
-        ${p.status==='finalizado-problema'&&(p.problemaTipo||p.problemaObs)?`<div style="font-size:12px;color:#a02020;background:#fde8e8;border-radius:8px;padding:.45rem .6rem;margin-top:.4rem">${p.problemaTipo?`<strong>${p.problemaTipo}</strong>`:''}${p.problemaTipo&&p.problemaObs?' · ':''}${p.problemaObs||''}</div>`:''}
+        ${p.status==='finalizado-problema'&&(p.problemaTipo||p.problemaObs||p.problemaSolucao)?`<div style="font-size:12px;color:#a02020;background:#fde8e8;border-radius:8px;padding:.45rem .6rem;margin-top:.4rem">
+          ${p.problemaTipo?`<strong>${p.problemaTipo}</strong>`:''}${p.problemaTipo&&p.problemaObs?' · ':''}${p.problemaObs||''}
+          ${p.problemaSolucao||p.problemaSolucaoObs?`<div style="margin-top:.25rem;color:#1a6a3a">🛠️ ${p.problemaSolucao||''}${p.problemaSolucao&&p.problemaSolucaoObs?' · ':''}${p.problemaSolucaoObs||''}</div>`:''}
+          ${p.problemaResolvido?`<div style="margin-top:.15rem;font-weight:600;color:${p.problemaResolvido==='sim'?'#1a6a3a':p.problemaResolvido==='parcial'?'#8a6a1e':'#a02020'}">${p.problemaResolvido==='sim'?'✅ Resolvido':p.problemaResolvido==='parcial'?'🟡 Resolvido em parte':'❌ Ainda em aberto'}</div>`:''}
+        </div>`:''}
         ${p.itens?.length>1?`<div style="margin:.35rem 0;padding:.4rem .6rem;background:var(--branco);border-radius:6px;font-size:12px">${p.itens.map(it=>`<div style="display:flex;justify-content:space-between;padding:.15rem 0;border-bottom:1px solid var(--borda)"><span>${it.produto}</span><span style="color:var(--verde);font-weight:500">${fmt(it.valor)}</span></div>`).join('')}</div>`:''}
         ${isCan&&p.valorRetido>0?`<div style="font-size:12px;color:var(--danger);font-weight:500;margin-bottom:.3rem">💰 Retido: ${fmt(p.valorRetido)}</div>`:''}
         ${(()=>{const fs=fotosDoPedido(p);if(!fs.length)return '';
@@ -2325,6 +2390,9 @@ function abrirFormPedido(cliId,pedido=null){
   selSt.value=stValido;
   preencherSelectProblema(pedido?.problemaTipo||'');
   document.getElementById('fp-problema-obs').value=pedido?.problemaObs||'';
+  document.getElementById('fp-problema-solucao-tipo').value=pedido?.problemaSolucao||'';
+  document.getElementById('fp-problema-solucao-obs').value=pedido?.problemaSolucaoObs||'';
+  document.getElementById('fp-problema-resolvido').value=pedido?.problemaResolvido||'';
   toggleCancelado(stValido);
   toggleAniversario(pedido?.ocasiao||'');
   atualizarSelectOcasiao();
@@ -2403,7 +2471,7 @@ async function salvarPedido(){
     }
   }
 
-  const dados={produto,valor,itens,entrega:parseFloat(document.getElementById('fp-entrega')?.value)||0,data:document.getElementById('fp-data')?.value||'',dataConfirmacao:document.getElementById('fp-data-conf')?.value||'',status,valorRetido:status==='cancelado'?(parseFloat(document.getElementById('fp-retido')?.value)||0):0,problemaTipo:status==='finalizado-problema'?(document.getElementById('fp-problema-tipo')?.value==='__outro'?'Outro':(document.getElementById('fp-problema-tipo')?.value||'')):'',problemaObs:status==='finalizado-problema'?(document.getElementById('fp-problema-obs')?.value.trim()||''):'',ocasiao:document.getElementById('fp-ocasiao')?.value||'',anivNome:document.getElementById('fp-ocasiao')?.value==='aniversario'?capitalizarNome(document.getElementById('fp-aniv-nome')?.value.trim()||''):'',anivId:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-id')?.value||''):'',anivData:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-data')?.value||''):'',remetente:capitalizarNome(document.getElementById('fp-remetente')?.value.trim()||''),destNome:capitalizarNome(document.getElementById('fp-dest-nome')?.value.trim()||''),destId,destTel:document.getElementById('fp-dest-tel')?.value?.trim()||'',destLogradouro:destLogr,destNumero:destNum,destComplemento:destComp,destBairro,destEnd:[destLogr,destNum,destComp].filter(Boolean).join(', '),obs:document.getElementById('fp-obs')?.value.trim()||'',foto:fotosPedido[0]||'',fotos:fotosPedido.slice(),atualizado:new Date().toISOString()};
+  const dados={produto,valor,itens,entrega:parseFloat(document.getElementById('fp-entrega')?.value)||0,data:document.getElementById('fp-data')?.value||'',dataConfirmacao:document.getElementById('fp-data-conf')?.value||'',status,valorRetido:status==='cancelado'?(parseFloat(document.getElementById('fp-retido')?.value)||0):0,problemaTipo:status==='finalizado-problema'?(document.getElementById('fp-problema-tipo')?.value==='__outro'?'Outro':(document.getElementById('fp-problema-tipo')?.value||'')):'',problemaObs:status==='finalizado-problema'?(document.getElementById('fp-problema-obs')?.value.trim()||''):'',problemaSolucao:status==='finalizado-problema'?(document.getElementById('fp-problema-solucao-tipo')?.value||''):'',problemaSolucaoObs:status==='finalizado-problema'?(document.getElementById('fp-problema-solucao-obs')?.value.trim()||''):'',problemaResolvido:status==='finalizado-problema'?(document.getElementById('fp-problema-resolvido')?.value||''):'',ocasiao:document.getElementById('fp-ocasiao')?.value||'',anivNome:document.getElementById('fp-ocasiao')?.value==='aniversario'?capitalizarNome(document.getElementById('fp-aniv-nome')?.value.trim()||''):'',anivId:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-id')?.value||''):'',anivData:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-data')?.value||''):'',remetente:capitalizarNome(document.getElementById('fp-remetente')?.value.trim()||''),destNome:capitalizarNome(document.getElementById('fp-dest-nome')?.value.trim()||''),destId,destTel:document.getElementById('fp-dest-tel')?.value?.trim()||'',destLogradouro:destLogr,destNumero:destNum,destComplemento:destComp,destBairro,destEnd:[destLogr,destNum,destComp].filter(Boolean).join(', '),obs:document.getElementById('fp-obs')?.value.trim()||'',foto:fotosPedido[0]||'',fotos:fotosPedido.slice(),atualizado:new Date().toISOString()};
   itens.forEach(it=>{if(it.produto)autoSalvarCadastro('produto',it.produto);});
   if(status==='finalizado-problema'){
     const _pt=document.getElementById('fp-problema-tipo')?.value||'';
@@ -3172,6 +3240,8 @@ function blocoProblemas(mes){
     porTipo[t].qtd++;
     porTipo[t].valor+=(Number(p.valor)||0);
     if(p.problemaObs)porTipo[t].obs.push(p.problemaObs);
+    if(p.problemaSolucao)porTipo[t].solucoes=[...(porTipo[t].solucoes||[]),p.problemaSolucao];
+    if(p.problemaResolvido!=='sim')porTipo[t].abertos=(porTipo[t].abertos||0)+1;
   });
   const lista=Object.values(porTipo).sort((a,b)=>b.qtd-a.qtd);
   const maior=lista[0].qtd;
@@ -3183,6 +3253,8 @@ function blocoProblemas(mes){
       <div style="height:6px;background:#f7d6d6;border-radius:4px;margin-top:3px;overflow:hidden">
         <div style="height:100%;width:${Math.round((t.qtd/maior)*100)}%;background:#c94040;border-radius:4px"></div></div>
       ${t.obs.length?`<div style="font-size:11px;color:#8a5a5a;margin-top:3px">${t.obs.slice(0,3).join(' · ')}${t.obs.length>3?' · +'+(t.obs.length-3):''}</div>`:''}
+      ${t.solucoes&&t.solucoes.length?`<div style="font-size:11px;color:#1a6a3a;margin-top:2px">🛠️ ${[...new Set(t.solucoes)].join(' · ')}</div>`:''}
+      ${t.abertos?`<div style="font-size:11px;color:#a02020;font-weight:600;margin-top:2px">❌ ${t.abertos} ainda em aberto</div>`:''}
     </div>`).join('')}
   </div>`;
 }
@@ -3372,7 +3444,7 @@ async function exportarTudoCSV(){
   const cab=['cliente_id','cliente','bairro','cidade','como_conheceu','cliente_desde',
              'pedido_data','data_confirmacao','dias_antecedencia','produto','item_de',
              'valor_item','valor_pedido','frete','status','ocasiao','aniversariante',
-             'problema_tipo','problema_obs'];
+             'problema_tipo','problema_obs','problema_solucao','problema_solucao_obs','problema_resolvido'];
   const linhas=[cab];
   let nPed=0, nLin=0, idx=0;
 
@@ -3396,7 +3468,8 @@ async function exportarTudoCSV(){
         ? p.itens.filter(it=>it&&(it.produto||'').trim())
         : [];
       const cauda=[Number(p.valor)||0, Number(p.entrega)||0, p.status||'', p.ocasiao||'',
-                   anon?'':(p.anivNome||''), p.problemaTipo||'', p.problemaObs||''];
+                   anon?'':(p.anivNome||''), p.problemaTipo||'', p.problemaObs||'',
+                   p.problemaSolucao||'', p.problemaSolucaoObs||'', p.problemaResolvido||''];
       if(itens.length){
         itens.forEach((it,k)=>{
           linhas.push([...base, (it.produto||'').trim(), (k+1)+'/'+itens.length,
