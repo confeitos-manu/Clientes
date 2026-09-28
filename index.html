@@ -259,6 +259,45 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
   }
   .main > div[id^="aba-"]{grid-row:1 / span 9}
   .main > #aba-alertas, .main > #aba-datas{grid-row:auto}
+  /* ===== Oportunidades ===== */
+  .op-acoes{background:var(--verde-bg);border:1px solid var(--verde-claro);border-radius:12px;padding:.9rem 1rem;margin-bottom:.9rem}
+  .op-acoes-t{font-size:13.5px;font-weight:700;color:#2a6a3a;margin-bottom:.4rem}
+  .op-acoes ol{margin:0;padding-left:1.1rem}
+  .op-acoes li{font-size:13px;color:var(--cinza);margin-bottom:.3rem;line-height:1.5}
+  .op-card{background:var(--branco);border:1px solid var(--borda);border-radius:12px;padding:.9rem 1rem;margin-bottom:.9rem}
+  .op-titulo{font-family:'Fraunces',serif;font-size:15.5px;font-weight:600;color:var(--cinza)}
+  .op-sub{font-size:11.5px;color:var(--muted);margin:.1rem 0 .6rem}
+  .op-dica{font-size:12px;color:#6a5a4a;background:var(--creme2);border-radius:8px;padding:.5rem .65rem;margin-top:.6rem;line-height:1.5}
+  .op-vazio{font-size:12.5px;color:var(--muted);padding:.5rem 0}
+  .op-linha{display:flex;align-items:center;gap:.5rem;padding:.45rem 0;border-top:1px solid var(--borda)}
+  .op-linha:first-of-type{border-top:none}
+  .op-linha-info{flex:1;min-width:0;cursor:pointer}
+  .op-nome{font-size:13.5px;font-weight:600;color:var(--cinza)}
+  .op-meta{font-size:11.5px;color:var(--muted);line-height:1.45}
+  .op-tag{display:inline-block;color:#fff;font-size:10px;font-weight:600;border-radius:10px;padding:1px 7px;vertical-align:middle}
+  .op-zap{background:#25d366;color:#fff;font-size:11.5px;font-weight:600;border-radius:8px;padding:.35rem .6rem;text-decoration:none;white-space:nowrap}
+  .op-segs{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:.5rem}
+  .op-seg{background:var(--creme2);border:1px solid var(--borda);border-radius:10px;padding:.55rem;text-align:center;cursor:pointer}
+  .op-seg-num{font-size:19px;font-weight:700}
+  .op-seg-nome{font-size:11px;color:var(--cinza)}
+  .op-seg-val{font-size:10.5px;color:var(--muted)}
+  .op-seg-box{margin-top:.7rem;border-top:1px solid var(--borda);padding-top:.5rem}
+  .op-seg-head{font-size:13px;font-weight:600;color:var(--cinza)}
+  .op-barras{display:flex;flex-direction:column;gap:.3rem}
+  .op-barra-linha{display:flex;align-items:center;gap:.5rem;font-size:11.5px;color:var(--cinza)}
+  .op-barra-linha.op-agora{font-weight:700}
+  .op-barra-lbl{width:92px;flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .op-barra-fundo{flex:1;height:10px;background:var(--creme2);border-radius:6px;overflow:hidden}
+  .op-barra{display:block;height:100%;background:var(--verde);border-radius:6px}
+  .op-barra-val{width:110px;flex:none;text-align:right;color:var(--muted)}
+  .op-barra-extra{font-size:10.5px;color:var(--muted);margin:-.1rem 0 .25rem 100px}
+  .op-subtitulo{font-size:12px;font-weight:600;color:var(--cinza);margin-bottom:.35rem}
+  .op-duas{display:grid;gap:.9rem}
+  @media(min-width:900px){
+    .op-duas{grid-template-columns:1fr 1fr}
+    #aba-oportunidades{display:grid;gap:0}
+  }
+
   /* listas da lateral com altura limitada e rolagem propria:
      assim a pagina nao fica enorme e nao "pula pro final" ao salvar */
   .main > #aba-alertas:not(.em-foco) #alerta-aniversarios,
@@ -326,6 +365,7 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
   <div class="nav-item" onclick="mudarAba('alertas',this)">🔔 Alertas</div>
   <div class="nav-item" onclick="mudarAba('datas',this)">📅 Datas</div>
   <div class="nav-item" onclick="mudarAba('relatorio',this)">📈 Relatório</div>
+  <div class="nav-item" onclick="mudarAba('oportunidades',this)">💡 Oportunidades</div>
   <div class="nav-item" onclick="mudarAba('resumo',this)">📊 Resumo</div>
   <div class="nav-item" onclick="mudarAba('pontos',this)">⭐ Pontos</div>
   <div class="nav-item" onclick="mudarAba('cadastros',this)">⚙️</div>
@@ -430,6 +470,19 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
 </div>
 
 <!-- RESUMO -->
+<div id="aba-oportunidades" style="display:none">
+  <div class="card" style="margin-bottom:.9rem">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap">
+      <div>
+        <h2 style="margin:0">💡 Oportunidades</h2>
+        <p style="font-size:12px;color:var(--muted);margin:.2rem 0 0">O que os seus próprios pedidos já dizem sobre a próxima venda.</p>
+      </div>
+      <button class="btn-sm" onclick="renderOportunidades()">↻ Atualizar</button>
+    </div>
+  </div>
+  <div id="op-conteudo"></div>
+</div>
+
 <div id="aba-resumo" style="display:none">
   <div class="resumo-pad" id="resumo-content"><div class="empty"><div class="empty-icon">📊</div><p>Carregando...</p></div></div>
 </div>
@@ -867,6 +920,7 @@ function iniciarApp(){
   appIniciado=true;
   document.getElementById('data-hoje').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})+' · v14';
   inicializarListeners();
+  preencherSelectsDeOcasiao();
   // com o catálogo carregado, o custo passa a ser achado pelo código
   carregarCatalogo();
 }
@@ -1092,7 +1146,9 @@ function exibeData(s){
 function diasParaHoje(isoDate){if(!isoDate)return null;return Math.round((new Date(isoDate+'T12:00')-new Date())/(1000*60*60*24));}
 function ocasiaoLabel(o){
   if(cadastros.ocasiao?.includes(o))return'🎉 '+o;
-  return{'dia-das-mulheres':'👩 Dia das Mulheres',aniversario:'🎂 Aniversário','dia-das-maes':'💐 Dia das Mães','dia-dos-namorados':'❤️ Namorados',natal:'🎄 Natal',casamento:'💍 Casamento',formatura:'🎓 Formatura','dia-dos-pais':'👨 Dia dos Pais',pascoa:'🐣 Páscoa','sem-ocasiao':'Sem ocasião',outro:'Outro'}[o]||o||'—';
+  const doCalendario={};
+  datasComemorativas(new Date().getFullYear()).forEach(d=>{doCalendario[d.key]=d.icon+' '+d.nome;});
+  return{...doCalendario,aniversario:'🎂 Aniversário','dia-dos-namorados':'❤️ Namorados',casamento:'💍 Casamento',formatura:'🎓 Formatura','cha-de-bebe':'🍼 Chá de bebê',agradecimento:'🙏 Agradecimento','sem-ocasiao':'Sem ocasião',outro:'Outro'}[o]||o||'—';
 }
 // Datas móveis do calendário — precisam ser globais porque são usadas
 // tanto na aba Datas quanto na detecção de ocasião ao salvar o pedido.
@@ -1100,6 +1156,37 @@ function calcPascoa(ano){
   const a=ano%19,b=Math.floor(ano/100),c=ano%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mes=Math.floor((h+l-7*m+114)/31),dia=(h+l-7*m+114)%31+1;
   return`${ano}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
 }
+// Última sexta-feira de novembro (Black Friday)
+function ultimaSextaNovembro(ano){
+  const d=new Date(ano,10,30);
+  while(d.getDay()!==5)d.setDate(d.getDate()-1);
+  return `${ano}-11-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+/* Todas as datas comemorativas que valem venda de presente.
+   Para acrescentar outra, basta incluir uma linha aqui —
+   ela aparece no calendário e na lista de ocasiões do pedido. */
+function datasComemorativas(ano){
+  return[
+    {key:'dia-das-mulheres',nome:'Dia das Mulheres',icon:'👩',data:`${ano}-03-08`},
+    {key:'pascoa',nome:'Páscoa',icon:'🐣',data:calcPascoa(ano)},
+    {key:'dia-das-maes',nome:'Dia das Mães',icon:'💐',data:primeiroDomingo(ano,5,2)},
+    {key:'dia-dos-namorados',nome:'Dia dos Namorados',icon:'❤️',data:`${ano}-06-12`},
+    {key:'sao-joao',nome:'Festa Junina / São João',icon:'🎇',data:`${ano}-06-24`},
+    {key:'dia-do-amigo',nome:'Dia do Amigo',icon:'🤝',data:`${ano}-07-20`},
+    {key:'dia-dos-avos',nome:'Dia dos Avós',icon:'👵',data:`${ano}-07-26`},
+    {key:'dia-dos-pais',nome:'Dia dos Pais',icon:'👨',data:primeiroDomingo(ano,8,2)},
+    {key:'dia-do-cliente',nome:'Dia do Cliente',icon:'🛍️',data:`${ano}-09-15`},
+    {key:'dia-da-secretaria',nome:'Dia da Secretária',icon:'💼',data:`${ano}-09-30`},
+    {key:'dia-das-criancas',nome:'Dia das Crianças',icon:'🧒',data:`${ano}-10-12`},
+    {key:'dia-dos-professores',nome:'Dia dos Professores',icon:'🍎',data:`${ano}-10-15`},
+    {key:'halloween',nome:'Halloween',icon:'🎃',data:`${ano}-10-31`},
+    {key:'black-friday',nome:'Black Friday',icon:'🛒',data:ultimaSextaNovembro(ano)},
+    {key:'natal',nome:'Natal',icon:'🎄',data:`${ano}-12-25`},
+    {key:'ano-novo',nome:'Ano Novo',icon:'🎆',data:`${ano}-12-31`},
+  ];
+}
+
 function primeiroDomingo(ano,mes,n){
   let d=new Date(ano,mes-1,1);
   while(d.getDay()!==0)d.setDate(d.getDate()+1);
@@ -1115,14 +1202,7 @@ function ocasiaoDaData(iso,janela=3){
   const d=new Date(iso+'T12:00');
   if(isNaN(d))return null;
   const ano=d.getFullYear();
-  const fixas=[
-    {key:'dia-das-mulheres',nome:'Dia das Mulheres',data:`${ano}-03-08`},
-    {key:'pascoa',nome:'Páscoa',data:calcPascoa(ano)},
-    {key:'dia-das-maes',nome:'Dia das Mães',data:primeiroDomingo(ano,5,2)},
-    {key:'dia-dos-namorados',nome:'Dia dos Namorados',data:`${ano}-06-12`},
-    {key:'dia-dos-pais',nome:'Dia dos Pais',data:primeiroDomingo(ano,8,2)},
-    {key:'natal',nome:'Natal',data:`${ano}-12-25`},
-  ];
+  const fixas=datasComemorativas(ano);
   let melhor=null;
   fixas.forEach(f=>{
     if(!f.data)return;
@@ -1137,7 +1217,19 @@ function ocasiaoDaData(iso,janela=3){
   return melhor;
 }
 
-const OCASIOES_FIXAS='<option value="">Não informada</option><option value="aniversario">Aniversário</option><option value="dia-das-mulheres">Dia das Mulheres</option><option value="dia-das-maes">Dia das Mães</option><option value="dia-dos-namorados">Dia dos Namorados</option><option value="natal">Natal</option><option value="casamento">Casamento</option><option value="formatura">Formatura</option><option value="dia-dos-pais">Dia dos Pais</option><option value="pascoa">Páscoa</option><option value="sem-ocasiao">Sem ocasião especial</option><option value="outro">Outro</option>';
+const OCASIOES_FIXAS='<option value="">Não informada</option><option value="aniversario">Aniversário</option>'
+  +datasComemorativas(new Date().getFullYear()).map(d=>`<option value="${d.key}">${d.nome}</option>`).join('')
+  +'<option value="casamento">Casamento</option><option value="formatura">Formatura</option>'
+  +'<option value="cha-de-bebe">Chá de bebê</option><option value="agradecimento">Agradecimento</option>'
+  +'<option value="sem-ocasiao">Sem ocasião especial</option><option value="outro">Outro</option>';
+
+// os dois formulários usam a mesma lista, para nada ficar de fora
+function preencherSelectsDeOcasiao(){
+  ['fp-ocasiao','rec-ocasiao'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el&&!el.dataset.pronto){ el.innerHTML=OCASIOES_FIXAS; el.dataset.pronto='1'; }
+  });
+}
 function atualizarSelectOcasiao(){
   const extras=cadastros.ocasiao.map(o=>`<option value="${o}">${o}</option>`).join('');
   const html=OCASIOES_FIXAS+(extras?`<optgroup label="── Personalizadas ──">${extras}</optgroup>`:'');
@@ -1306,7 +1398,7 @@ async function getPedidosTodos(){
 function mudarAba(aba,el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   el.classList.add('active');
-  ['clientes','alertas','datas','relatorio','resumo','pontos','cadastros','importar'].forEach(a=>{
+  ['clientes','alertas','datas','relatorio','oportunidades','resumo','pontos','cadastros','importar'].forEach(a=>{
     document.getElementById('aba-'+a).style.display=a===aba?'block':'none';
   });
   // No notebook os paineis laterais nao "abrem" numa pagina nova: eles saem
@@ -1316,6 +1408,7 @@ function mudarAba(aba,el){
   });
   if(aba==='alertas')renderAlertas();
   if(aba==='datas')renderDatasQuentes();
+  if(aba==='oportunidades')renderOportunidades();
   if(aba==='resumo')renderResumo();
   if(aba==='pontos')renderPontos();
   if(aba==='cadastros')['produto','ocasiao','bairro','rua','problema'].forEach(renderCadastro);
@@ -1586,15 +1679,7 @@ async function renderDatasQuentes(){
     return{nome,data:dataSalva,icon:'🎉',key:nome,custom:true};
   }));
 
-  const todasDatas=[
-    {nome:'Dia das Mulheres',data:`${ano}-03-08`,icon:'👩',key:'dia-das-mulheres'},
-    {nome:'Páscoa',data:calcPascoa(ano),icon:'🐣',key:'pascoa'},
-    {nome:'Dia das Mães',data:primeiroDomingo(ano,5,2),icon:'💐',key:'dia-das-maes'},
-    {nome:'Dia dos Namorados',data:`${ano}-06-12`,icon:'❤️',key:'dia-dos-namorados'},
-    {nome:'Dia dos Pais',data:primeiroDomingo(ano,8,2),icon:'👨',key:'dia-dos-pais'},
-    {nome:'Natal',data:`${ano}-12-25`,icon:'🎄',key:'natal'},
-    ...datasCustom,
-  ];
+  const todasDatas=[...datasComemorativas(ano),...datasCustom];
 
   const proximas=todasDatas.map(d=>{
     if(!d.data)return null; // ocasião personalizada sem data configurada
@@ -1603,11 +1688,9 @@ async function renderDatasQuentes(){
     const anoOriginal=dt.getFullYear();
     // Se já passou, move para o próximo ano
     if(dt<hoje){
-      // Para datas fixas (Páscoa, Mães, Pais), recalcula para o próximo ano
-      if(d.key==='pascoa') dt=new Date(calcPascoa(ano+1)+'T12:00');
-      else if(d.key==='dia-das-maes') dt=new Date(primeiroDomingo(ano+1,5,2)+'T12:00');
-      else if(d.key==='dia-dos-pais') dt=new Date(primeiroDomingo(ano+1,8,2)+'T12:00');
-      else dt=new Date(`${ano+1}-${d.data.slice(5)}T12:00`);
+      // Páscoa, Mães, Pais e Black Friday mudam de dia: recalcula no ano que vem
+      const noProximoAno=datasComemorativas(ano+1).find(x=>x.key===d.key);
+      dt=new Date((noProximoAno?noProximoAno.data:`${ano+1}-${d.data.slice(5)}`)+'T12:00');
     }
     const dias=Math.round((dt-hoje)/(1000*60*60*24));
     const dataFormatada=dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'long'});
@@ -2572,8 +2655,445 @@ async function renderRelatorio(){
     return`<div class="rel-produto-row"><div class="rel-produto-head"><div><div class="rel-produto-nome">🌸 ${p.nome}</div><div class="rel-produto-qtd">${p.qtd}x${p.frete>0?' · frete '+fmt(p.frete):''}</div></div>${custo===0?`<button class="btn-edit-custo" onclick="abrirCusto('${p.nome.replace(/'/g,"\\'")}')">+ custo</button>`:''}</div><div class="rel-produto-valores"><div class="rel-val-item"><div class="rvl">Receita</div><div class="rvv">${fmt(p.receita)}</div></div><div class="rel-val-item"><div class="rvl">Custo total</div><div class="rvv">${custo>0?fmt(custTotal):'—'}</div></div><div class="rel-val-item ${lucro!==null?'lucro-ok':'lucro-sem'}"><div class="rvl">Lucro${margem!==null?' ('+margem+'%)':''}</div><div class="rvv">${lucro!==null?fmt(lucro):'cadastre o custo'}</div></div></div></div>`;
   }).join('');
   if(temCusto)html+=`<div style="background:var(--verde-bg);border:1px solid var(--verde-claro);border-radius:10px;padding:.85rem;margin-top:.5rem"><div style="font-size:12px;color:var(--cinza);margin-bottom:.3rem">TOTAL DO MÊS</div><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><span><small style="color:var(--cinza)">Receita: </small><strong>${fmt(totalReceita)}</strong></span><span><small style="color:var(--cinza)">Custo: </small><strong>${fmt(totalCusto)}</strong></span><span><small style="color:var(--cinza)">Lucro: </small><strong style="color:#2a7a2a;font-size:15px">${fmt(lucroTotal)}</strong></span></div></div>`;
+  html+=blocoClientesDoMes(mes,todosPedidos);
   html+=blocoProblemas(mes);
   document.getElementById('rel-conteudo').innerHTML=html;
+}
+
+/* Quem comprou no mes, do que mais gastou pro que menos.
+   Cada linha abre a ficha do cliente. */
+function blocoClientesDoMes(mes,pedidosDoMes){
+  const porCliente={};
+  Object.entries(pedidosPorCliente).forEach(([cliId,peds])=>{
+    peds.forEach(p=>{
+      if(!pedidosDoMes.includes(p))return;
+      if(!porCliente[cliId]){
+        const cli=clientes.find(x=>x.id===cliId);
+        porCliente[cliId]={id:cliId,nome:cli?.nome||'Cliente removido',whats:cli?.whats||'',qtd:0,valor:0,produtos:[]};
+      }
+      porCliente[cliId].qtd++;
+      porCliente[cliId].valor+=Number(p.valor)||0;
+      if(p.produto)porCliente[cliId].produtos.push(p.produto);
+    });
+  });
+  const lista=Object.values(porCliente).sort((a,b)=>b.valor-a.valor);
+  if(!lista.length)return '';
+  const repetidos=lista.filter(c=>c.qtd>1).length;
+  return `<div style="background:var(--creme2);border:1px solid var(--borda);border-radius:10px;padding:.85rem;margin-top:.9rem">
+    <div style="font-size:13px;font-weight:600;color:var(--cinza);margin-bottom:.15rem">👥 ${lista.length} cliente${lista.length!==1?'s':''} em ${formataMes(mes)}</div>
+    <div style="font-size:11.5px;color:var(--muted);margin-bottom:.6rem">${repetidos?repetidos+' comprou mais de uma vez · ':''}toque no nome para abrir a ficha</div>
+    ${lista.map(c=>`
+      <div class="data-quente-card" onclick="verDetalhe('${c.id}')" style="cursor:pointer">
+        <div class="dq-icon">${c.qtd>1?'⭐':'🌸'}</div>
+        <div class="dq-info">
+          <div class="dq-nome">${c.nome}</div>
+          <div class="dq-sub">${c.qtd} pedido${c.qtd!==1?'s':''} · ${c.produtos.slice(0,2).join(', ')}${c.produtos.length>2?' +'+(c.produtos.length-2):''}</div>
+        </div>
+        <div class="dq-data"><strong>${fmt(c.valor)}</strong></div>
+      </div>`).join('')}
+  </div>`;
+}
+
+/* =====================================================================
+   OPORTUNIDADES — lê os pedidos que já existem e transforma em ação.
+   Nada aqui inventa dado: tudo sai de clientes + pedidos finalizados.
+===================================================================== */
+const OP_HOJE = () => new Date(new Date().toISOString().slice(0,10)+'T12:00');
+
+function opVendas(){
+  const out=[];
+  Object.entries(pedidosPorCliente).forEach(([cliId,peds])=>{
+    (peds||[]).forEach(p=>{
+      if(!p.data)return;
+      if(p.status!=='finalizado-ok'&&p.status!=='finalizado-problema')return;
+      if(!((Number(p.valor)||0)>0))return;
+      if(p.produto?.startsWith('🎁 Resgate'))return;
+      out.push({...p,cliId});
+    });
+  });
+  return out.sort((a,b)=>(a.data||'').localeCompare(b.data||''));
+}
+function opDias(iso){ return Math.round((OP_HOJE()-new Date(iso+'T12:00'))/86400000); }
+function opZap(tel,texto){
+  const n=String(tel||'').replace(/\D/g,'');
+  if(!n)return '';
+  return `<a class="op-zap" target="_blank" href="https://wa.me/55${n}?text=${encodeURIComponent(texto)}">💬 Chamar</a>`;
+}
+function opCard(titulo,sub,corpo,dica){
+  return `<div class="op-card">
+    <div class="op-titulo">${titulo}</div>
+    ${sub?`<div class="op-sub">${sub}</div>`:''}
+    ${corpo}
+    ${dica?`<div class="op-dica">💡 ${dica}</div>`:''}
+  </div>`;
+}
+function opVazio(txt){ return `<div class="op-vazio">${txt}</div>`; }
+
+/* 1. RADAR DE RECOMPRA
+   Cada cliente tem o próprio ritmo. Com 2 ou mais compras dá pra saber o
+   intervalo médio dela e avisar quando está na hora de chamar de novo. */
+function opRecompra(vendas){
+  const porCli={};
+  vendas.forEach(v=>{ (porCli[v.cliId]=porCli[v.cliId]||[]).push(v); });
+  const linhas=[];
+  Object.entries(porCli).forEach(([cliId,peds])=>{
+    if(peds.length<2)return;
+    const datas=[...new Set(peds.map(p=>p.data))].sort();
+    if(datas.length<2)return;
+    let soma=0;
+    for(let i=1;i<datas.length;i++) soma+=Math.round((new Date(datas[i]+'T12:00')-new Date(datas[i-1]+'T12:00'))/86400000);
+    const media=Math.round(soma/(datas.length-1));
+    if(media<=0)return;
+    const desde=opDias(datas[datas.length-1]);
+    const ticket=peds.reduce((s,p)=>s+(Number(p.valor)||0),0)/peds.length;
+    const cli=clientes.find(c=>c.id===cliId);
+    const atraso=desde/media;
+    if(atraso<0.75)return;                        // ainda cedo
+    linhas.push({cliId,nome:cli?.nome||'—',whats:cli?.whats||'',media,desde,ticket,
+      compras:datas.length,atraso,
+      ultimo:peds[peds.length-1].produto||'',
+      estado: atraso>2.5?'sumiu' : atraso>1.4?'atrasado' : 'no ponto'});
+  });
+  linhas.sort((a,b)=>(b.ticket*Math.min(b.atraso,3))-(a.ticket*Math.min(a.atraso,3)));
+  const corpo=linhas.length?linhas.slice(0,25).map(l=>{
+    const cor=l.estado==='no ponto'?'var(--verde)':l.estado==='atrasado'?'#c98a00':'#b04a4a';
+    const msg=`Oi ${l.nome.split(' ')[0]}! Tudo bem? Chegaram novidades lindas aqui na Confeitos da Manu 🌿 Lembrei de você — quer ver as opções?`;
+    return `<div class="op-linha">
+      <div class="op-linha-info" onclick="verDetalhe('${l.cliId}')">
+        <div class="op-nome">${l.nome} <span class="op-tag" style="background:${cor}">${l.estado}</span></div>
+        <div class="op-meta">compra a cada ~${l.media} dias · última há ${l.desde} dias · ${l.compras} compras · ticket ${fmt(l.ticket)}${l.ultimo?' · último: '+l.ultimo:''}</div>
+      </div>${opZap(l.whats,msg)}</div>`;
+  }).join(''):opVazio('Ainda não há clientes com duas compras para calcular o ritmo.');
+  const potencial=linhas.reduce((s,l)=>s+l.ticket,0);
+  return opCard('🔁 Radar de recompra',
+    linhas.length?`${linhas.length} clientes no ponto de comprar de novo · potencial de ${fmt(potencial)}`:'',
+    corpo,
+    'Chame primeiro quem está "no ponto": a chance de fechar é maior do que com quem já sumiu.');
+}
+
+/* 2. SEGMENTOS (RFM simplificado): quanto tempo faz, quantas vezes, quanto gasta */
+function opSegmentos(vendas){
+  const porCli={};
+  vendas.forEach(v=>{ (porCli[v.cliId]=porCli[v.cliId]||[]).push(v); });
+  const segs={campea:[],fiel:[],nova:[],risco:[],perdida:[]};
+  Object.entries(porCli).forEach(([cliId,peds])=>{
+    const cli=clientes.find(c=>c.id===cliId);
+    const total=peds.reduce((s,p)=>s+(Number(p.valor)||0),0);
+    const desde=opDias(peds[peds.length-1].data);
+    const n=peds.length;
+    const item={cliId,nome:cli?.nome||'—',whats:cli?.whats||'',total,n,desde};
+    if(desde>180) segs.perdida.push(item);
+    else if(n>=3&&desde<=60) segs.campea.push(item);
+    else if(n>=2&&desde<=120) segs.fiel.push(item);
+    else if(n===1&&desde<=60) segs.nova.push(item);
+    else segs.risco.push(item);
+  });
+  const defs=[
+    {k:'campea',nome:'⭐ Campeãs',cor:'#2a7a2a',o:'compram sempre e há pouco tempo',acao:'lançamento em primeira mão e brinde surpresa'},
+    {k:'fiel',nome:'💚 Fiéis',cor:'#3a8a5a',o:'já voltaram pelo menos uma vez',acao:'convite pra data comemorativa'},
+    {k:'nova',nome:'🌱 Primeira compra',cor:'#8a7a3a',o:'compraram uma vez, recente',acao:'pedir foto/depoimento e oferecer a segunda compra com mimo'},
+    {k:'risco',nome:'⚠️ Em risco',cor:'#c98a00',o:'já foram boas, estão esfriando',acao:'mensagem pessoal, não promoção genérica'},
+    {k:'perdida',nome:'😴 Sumidas',cor:'#b04a4a',o:'mais de 6 meses sem comprar',acao:'campanha de reativação com oferta clara'},
+  ];
+  const corpo=`<div class="op-segs">${defs.map(d=>{
+    const l=segs[d.k].sort((a,b)=>b.total-a.total);
+    const soma=l.reduce((s,x)=>s+x.total,0);
+    return `<div class="op-seg" onclick="opAbrirSeg('${d.k}')">
+      <div class="op-seg-num" style="color:${d.cor}">${l.length}</div>
+      <div class="op-seg-nome">${d.nome}</div>
+      <div class="op-seg-val">${fmt(soma)}</div>
+    </div>`;
+  }).join('')}</div>
+  <div id="op-seg-lista"></div>`;
+  window.opSegsCache={segs,defs};
+  return opCard('🎯 Seus clientes em 5 grupos','toque num grupo para ver quem está nele',corpo,
+    'Cada grupo pede uma conversa diferente. Falar igual com todos é o que faz a mensagem ser ignorada.');
+}
+function opAbrirSeg(k){
+  const {segs,defs}=window.opSegsCache||{};
+  if(!segs)return;
+  const d=defs.find(x=>x.k===k);
+  const l=segs[k].sort((a,b)=>b.total-a.total);
+  document.getElementById('op-seg-lista').innerHTML=`
+    <div class="op-seg-box">
+      <div class="op-seg-head">${d.nome} — ${d.o}</div>
+      <div class="op-dica" style="margin:.35rem 0 .6rem">O que funciona aqui: ${d.acao}</div>
+      ${l.length?l.map(c=>`<div class="op-linha">
+        <div class="op-linha-info" onclick="verDetalhe('${c.cliId}')">
+          <div class="op-nome">${c.nome}</div>
+          <div class="op-meta">${c.n} compra${c.n!==1?'s':''} · ${fmt(c.total)} no total · última há ${c.desde} dias</div>
+        </div>${opZap(c.whats,`Oi ${c.nome.split(' ')[0]}! 🌿`)}</div>`).join(''):opVazio('Ninguém neste grupo.')}
+    </div>`;
+}
+
+/* 3. DESTINATÁRIOS: quem RECEBEU presente e ainda não é cliente seu */
+function opDestinatarios(vendas){
+  const jaCliente=new Set(clientes.map(c=>(c.whats||'').replace(/\D/g,'')).filter(Boolean));
+  const nomesCli=new Set(clientes.map(c=>normProd(c.nome)));
+  const mapa={};
+  vendas.forEach(v=>{
+    const nome=(v.destNome||'').trim();
+    if(!nome||v.destId)return;
+    const tel=(v.destTel||'').replace(/\D/g,'');
+    if(nomesCli.has(normProd(nome))||(tel&&jaCliente.has(tel)))return;
+    const k=normProd(nome)+'|'+tel;
+    if(!mapa[k])mapa[k]={nome,tel,vezes:0,quem:new Set(),bairro:v.destBairro||'',ultima:v.data};
+    mapa[k].vezes++;
+    const c=clientes.find(x=>x.id===v.cliId);
+    if(c)mapa[k].quem.add(c.nome);
+    if((v.data||'')>(mapa[k].ultima||''))mapa[k].ultima=v.data;
+  });
+  const lista=Object.values(mapa).sort((a,b)=>b.vezes-a.vezes||(b.ultima||'').localeCompare(a.ultima||''));
+  const corpo=lista.length?lista.slice(0,30).map(d=>`<div class="op-linha">
+      <div class="op-linha-info">
+        <div class="op-nome">${d.nome}${d.vezes>1?` <span class="op-tag" style="background:var(--verde)">${d.vezes}x presenteada</span>`:''}</div>
+        <div class="op-meta">${d.tel?d.tel:'sem telefone'} · presente de ${[...d.quem].slice(0,2).join(', ')||'—'}${d.bairro?' · '+d.bairro:''}</div>
+      </div>${opZap(d.tel,`Oi ${d.nome.split(' ')[0]}! Aqui é a Manu, da Confeitos da Manu 🌿 Você recebeu um presente nosso e queria te dar as boas-vindas. Posso te mandar as novidades?`)}</div>`).join('')
+    :opVazio('Nenhum destinatário novo. Preencha o nome e o WhatsApp de quem recebe o presente para essa lista encher.');
+  return opCard('🎁 Quem recebeu presente e ainda não é sua cliente',
+    lista.length?`${lista.length} pessoas já receberam algo seu`:'',
+    corpo,
+    'Quem recebeu e amou é a lista mais barata de converter: já conhece o produto e a sua entrega.');
+}
+
+/* 4. COMBOS: o que a mesma pessoa leva junto — vira kit pronto */
+function opCombos(vendas){
+  const pares={};
+  const cesta={};
+  vendas.forEach(v=>{
+    const itens=(v.itens&&v.itens.length?v.itens.map(i=>i.produto):[v.produto]).filter(Boolean);
+    const k=v.cliId+'|'+v.data;
+    (cesta[k]=cesta[k]||[]).push(...itens);
+  });
+  Object.values(cesta).forEach(itens=>{
+    const uniq=[...new Set(itens.map(i=>i.trim()).filter(Boolean))];
+    for(let i=0;i<uniq.length;i++)for(let j=i+1;j<uniq.length;j++){
+      const par=[uniq[i],uniq[j]].sort();
+      const k=par.join(' + ');
+      pares[k]=(pares[k]||0)+1;
+    }
+  });
+  const lista=Object.entries(pares).map(([k,v])=>({k,v})).filter(x=>x.v>=2).sort((a,b)=>b.v-a.v).slice(0,12);
+  const corpo=lista.length?lista.map(l=>`<div class="op-linha"><div class="op-linha-info">
+      <div class="op-nome">${l.k}</div>
+      <div class="op-meta">levados juntos ${l.v} vezes</div></div></div>`).join('')
+    :opVazio('Ainda não há combinações repetidas. Lance os pedidos com vários itens para essa lista aparecer.');
+  return opCard('🧩 O que suas clientes já levam junto',
+    lista.length?'cada linha é um kit que o mercado já validou':'',
+    corpo,
+    'Transforme os 3 primeiros em produtos de catálogo com nome próprio e preço fechado. Kit pronto vende mais que item solto.');
+}
+
+/* 5. FAIXAS DE PREÇO: onde está o dinheiro e onde falta produto */
+function opFaixas(vendas){
+  const faixas=[[0,50],[50,80],[80,120],[120,180],[180,250],[250,400],[400,1e9]];
+  const dados=faixas.map(([a,b])=>({a,b,qtd:0,receita:0}));
+  vendas.forEach(v=>{
+    const val=Number(v.valor)||0;
+    const f=dados.find(d=>val>=d.a&&val<d.b);
+    if(f){f.qtd++;f.receita+=val;}
+  });
+  const maxQtd=Math.max(...dados.map(d=>d.qtd),1);
+  const total=dados.reduce((s,d)=>s+d.qtd,0)||1;
+  const corpo=`<div class="op-barras">${dados.map(d=>`
+    <div class="op-barra-linha">
+      <span class="op-barra-lbl">${d.b>1e8?'acima de R$400':'R$'+d.a+'–'+d.b}</span>
+      <span class="op-barra-fundo"><span class="op-barra" style="width:${Math.round(d.qtd/maxQtd*100)}%"></span></span>
+      <span class="op-barra-val">${d.qtd} · ${Math.round(d.qtd/total*100)}%</span>
+    </div>`).join('')}</div>`;
+  const forte=dados.reduce((m,d)=>d.receita>m.receita?d:m,dados[0]);
+  const acima=dados[dados.indexOf(forte)+1];
+  const dica=acima&&acima.qtd<forte.qtd*0.3
+    ? `A maior parte vende entre R$${forte.a} e R$${forte.b}. Logo acima (R$${acima.a}–${acima.b}) quase não há venda: um produto "premium" desenhado pra essa faixa costuma subir o ticket sem espantar a cliente.`
+    : 'Um produto novo na faixa logo acima da sua faixa campeã costuma subir o ticket médio.';
+  return opCard('💰 Faixas de preço que você vende','quantidade de pedidos por valor',corpo,dica);
+}
+
+/* 6. SAZONALIDADE: em que mês cada produto vende — o que preparar e quando */
+function opSazonalidade(vendas){
+  const meses=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  const porMes=Array(12).fill(0).map(()=>({receita:0,qtd:0,produtos:{}}));
+  vendas.forEach(v=>{
+    const m=Number(v.data.slice(5,7))-1;
+    if(isNaN(m))return;
+    porMes[m].receita+=Number(v.valor)||0;
+    porMes[m].qtd++;
+    const nome=v.produto||'—';
+    porMes[m].produtos[nome]=(porMes[m].produtos[nome]||0)+1;
+  });
+  const max=Math.max(...porMes.map(m=>m.receita),1);
+  const mesAtual=new Date().getMonth();
+  const corpo=`<div class="op-barras">${porMes.map((m,i)=>`
+    <div class="op-barra-linha ${i===mesAtual?'op-agora':''}">
+      <span class="op-barra-lbl">${meses[i]}${i===mesAtual?' (agora)':''}</span>
+      <span class="op-barra-fundo"><span class="op-barra" style="width:${Math.round(m.receita/max*100)}%"></span></span>
+      <span class="op-barra-val">${m.receita?fmt(m.receita):'—'}</span>
+    </div>`).join('')}</div>`;
+  const prox=(mesAtual+1)%12;
+  const topProx=Object.entries(porMes[prox].produtos).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]);
+  const dica=porMes[prox].qtd
+    ? `Mês que vem (${meses[prox]}) você costuma vender ${porMes[prox].qtd} pedidos. Os campeões foram: ${topProx.join(', ')}. Prepare insumos e poste esses antes.`
+    : `Mês que vem (${meses[prox]}) tem pouco histórico. É um bom mês para testar um lançamento.`;
+  return opCard('📆 Em que mês você vende','soma de todos os anos que você já registrou',corpo,dica);
+}
+
+/* 7. OCASIÕES: qual data comemorativa move seu faturamento */
+function opOcasioes(vendas){
+  const porOc={};
+  vendas.forEach(v=>{
+    const oc=v.ocasiao||'sem-ocasiao';
+    if(!porOc[oc])porOc[oc]={oc,qtd:0,receita:0,produtos:{}};
+    porOc[oc].qtd++; porOc[oc].receita+=Number(v.valor)||0;
+    const nome=v.produto||'—';
+    porOc[oc].produtos[nome]=(porOc[oc].produtos[nome]||0)+1;
+  });
+  const lista=Object.values(porOc).sort((a,b)=>b.receita-a.receita).slice(0,8);
+  const max=Math.max(...lista.map(l=>l.receita),1);
+  const corpo=lista.length?`<div class="op-barras">${lista.map(l=>`
+    <div class="op-barra-linha">
+      <span class="op-barra-lbl">${ocasiaoLabel(l.oc)}</span>
+      <span class="op-barra-fundo"><span class="op-barra" style="width:${Math.round(l.receita/max*100)}%"></span></span>
+      <span class="op-barra-val">${fmt(l.receita)} · ${l.qtd}x</span>
+    </div>
+    <div class="op-barra-extra">campeão: ${Object.entries(l.produtos).sort((a,b)=>b[1]-a[1])[0][0]}</div>`).join('')}</div>`
+    :opVazio('Marque a ocasião nos pedidos para ver isso.');
+  return opCard('🎀 Datas que mais te dão dinheiro','receita por ocasião',corpo,
+    'Para a próxima data forte, avise primeiro quem já comprou nela no ano passado — em Datas, cada data mostra esses clientes.');
+}
+
+/* 8. PRODUTOS: volume x margem, usando o custo da precificação */
+function opProdutos(vendas){
+  const porProd={};
+  vendas.forEach(v=>{
+    const nome=v.produto||'—';
+    if(!porProd[nome])porProd[nome]={nome,qtd:0,receita:0};
+    porProd[nome].qtd++; porProd[nome].receita+=Number(v.valor)||0;
+  });
+  const lista=Object.values(porProd).map(p=>{
+    const custo=custoDe(p.nome);
+    const margem=custo>0&&p.receita>0?Math.round(((p.receita-custo*p.qtd)/p.receita)*100):null;
+    return {...p,custo,margem,lucro:custo>0?p.receita-custo*p.qtd:null};
+  }).sort((a,b)=>b.receita-a.receita);
+  const comCusto=lista.filter(p=>p.margem!==null);
+  const medQtd=lista.reduce((s,p)=>s+p.qtd,0)/(lista.length||1);
+  const medMargem=comCusto.length?comCusto.reduce((s,p)=>s+p.margem,0)/comCusto.length:0;
+  const grupo=p=>{
+    if(p.margem===null)return {t:'sem custo',c:'#999'};
+    if(p.qtd>=medQtd&&p.margem>=medMargem)return {t:'campeão',c:'#2a7a2a'};
+    if(p.qtd>=medQtd&&p.margem<medMargem)return {t:'vende mas rende pouco',c:'#c98a00'};
+    if(p.qtd<medQtd&&p.margem>=medMargem)return {t:'joia escondida',c:'#3a6a9a'};
+    return {t:'repensar',c:'#b04a4a'};
+  };
+  const corpo=lista.length?lista.slice(0,20).map(p=>{
+    const g=grupo(p);
+    return `<div class="op-linha"><div class="op-linha-info">
+      <div class="op-nome">${p.nome} <span class="op-tag" style="background:${g.c}">${g.t}</span></div>
+      <div class="op-meta">${p.qtd}x · ${fmt(p.receita)}${p.margem!==null?` · margem ${p.margem}% · lucro ${fmt(p.lucro)}`:' · cadastre o custo na precificação'}</div>
+    </div></div>`;
+  }).join(''):opVazio('Sem vendas registradas ainda.');
+  const joias=lista.filter(p=>grupo(p).t==='joia escondida').slice(0,2).map(p=>p.nome);
+  return opCard('🏆 Seus produtos: o que vende x o que rende','',corpo,
+    joias.length?`Divulgue mais: ${joias.join(' e ')} — dão boa margem e vendem pouco. É o ganho mais rápido que existe.`
+      :'Cadastre o custo dos produtos na precificação para ver a margem real de cada um aqui.');
+}
+
+/* 9. DE ONDE VÊM AS CLIENTES e ONDE ELAS ESTÃO */
+function opOrigemBairro(vendas){
+  const gasto={};
+  vendas.forEach(v=>{ gasto[v.cliId]=(gasto[v.cliId]||0)+(Number(v.valor)||0); });
+  const porOrigem={},porBairro={};
+  clientes.forEach(c=>{
+    const g=gasto[c.id]||0;
+    const o=(c.origem||'').trim()||'não informado';
+    if(!porOrigem[o])porOrigem[o]={n:0,valor:0};
+    porOrigem[o].n++; porOrigem[o].valor+=g;
+    const b=(c.bairro||'').trim();
+    if(b){ if(!porBairro[b])porBairro[b]={n:0,valor:0}; porBairro[b].n++; porBairro[b].valor+=g; }
+  });
+  const mini=(obj,vazio)=>{
+    const l=Object.entries(obj).sort((a,b)=>b[1].valor-a[1].valor).slice(0,6);
+    if(!l.length)return opVazio(vazio);
+    const max=Math.max(...l.map(x=>x[1].valor),1);
+    return `<div class="op-barras">${l.map(([k,v])=>`
+      <div class="op-barra-linha">
+        <span class="op-barra-lbl">${k}</span>
+        <span class="op-barra-fundo"><span class="op-barra" style="width:${Math.round(v.valor/max*100)}%"></span></span>
+        <span class="op-barra-val">${fmt(v.valor)} · ${v.n} cli.</span>
+      </div>`).join('')}</div>`;
+  };
+  return opCard('📍 De onde vêm e onde estão','',
+    `<div class="op-duas">
+      <div><div class="op-subtitulo">Como conheceram</div>${mini(porOrigem,'Preencha "como conheceu" no cadastro.')}</div>
+      <div><div class="op-subtitulo">Bairros</div>${mini(porBairro,'Preencha o bairro no cadastro.')}</div>
+    </div>`,
+    'O canal que traz clientes que gastam mais merece mais do seu tempo — e o bairro campeão é onde vale anunciar e combinar rota de entrega.');
+}
+
+/* Painel: as 3 ações da semana, no topo */
+function opAcoesDaSemana(vendas){
+  const acoes=[];
+  const porCli={};
+  vendas.forEach(v=>{ (porCli[v.cliId]=porCli[v.cliId]||[]).push(v); });
+  let noPonto=0,valorPonto=0;
+  Object.entries(porCli).forEach(([cliId,peds])=>{
+    const datas=[...new Set(peds.map(p=>p.data))].sort();
+    if(datas.length<2)return;
+    let soma=0;
+    for(let i=1;i<datas.length;i++) soma+=Math.round((new Date(datas[i]+'T12:00')-new Date(datas[i-1]+'T12:00'))/86400000);
+    const media=soma/(datas.length-1);
+    const desde=opDias(datas[datas.length-1]);
+    if(media>0&&desde/media>=0.75&&desde/media<=1.6){ noPonto++; valorPonto+=peds.reduce((s,p)=>s+(Number(p.valor)||0),0)/peds.length; }
+  });
+  if(noPonto)acoes.push(`Chamar <b>${noPonto} cliente${noPonto!==1?'s':''}</b> que ${noPonto!==1?'estão':'está'} no ponto de recomprar — potencial de <b>${fmt(valorPonto)}</b>.`);
+  const prox=proximaDataForte();
+  if(prox){
+    const quando=prox.dias===0?'É hoje':prox.dias===1?'É amanhã':`Faltam <b>${prox.dias} dias</b> para`;
+    acoes.push(prox.receita>0
+      ? `${quando} ${prox.nome}. Nos anos anteriores essa data rendeu <b>${fmt(prox.receita)}</b>${prox.produto?` e o campeão foi <b>${prox.produto}</b>`:''}.`
+      : `${quando} ${prox.nome}. Você ainda não registrou vendas nessa data — boa chance de lançar algo e testar.`);
+  }
+  const novos=vendas.filter(v=>v.destNome&&!v.destId&&(v.destTel||'').replace(/\D/g,'')).length;
+  if(novos)acoes.push(`Você tem <b>${novos} presente${novos!==1?'s':''}</b> entregue${novos!==1?'s':''} a pessoas que ainda não são clientes — dá pra convidar pelo WhatsApp.`);
+  if(!acoes.length)acoes.push('Registre as vendas com ocasião, destinatário e itens para as sugestões aparecerem aqui.');
+  return `<div class="op-acoes">
+    <div class="op-acoes-t">🚀 Onde mexer esta semana</div>
+    <ol>${acoes.map(a=>`<li>${a}</li>`).join('')}</ol></div>`;
+}
+function proximaDataForte(){
+  const hoje=OP_HOJE(), ano=hoje.getFullYear();
+  const vendas=opVendas();
+  let melhor=null;
+  [...datasComemorativas(ano),...datasComemorativas(ano+1)].forEach(d=>{
+    if(!d.data)return;
+    const dt=new Date(d.data+'T12:00');
+    const dias=Math.round((dt-hoje)/86400000);
+    if(dias<0||dias>75)return;
+    const doAno=vendas.filter(v=>v.ocasiao===d.key);
+    const receita=doAno.reduce((s,v)=>s+(Number(v.valor)||0),0);
+    const prod={};
+    doAno.forEach(v=>{ prod[v.produto||'—']=(prod[v.produto||'—']||0)+1; });
+    const top=Object.entries(prod).sort((a,b)=>b[1]-a[1])[0];
+    if(!melhor||dias<melhor.dias)melhor={nome:d.nome,dias,receita,produto:top?top[0]:''};
+  });
+  return melhor;
+}
+
+async function renderOportunidades(){
+  const el=document.getElementById('op-conteudo');
+  el.innerHTML='<div class="op-vazio">Lendo seus pedidos...</div>';
+  await getPedidosTodos();
+  const vendas=opVendas();
+  if(!vendas.length){ el.innerHTML=opVazio('Ainda não há vendas finalizadas para analisar.'); return; }
+  el.innerHTML=opAcoesDaSemana(vendas)
+    +opRecompra(vendas)
+    +opSegmentos(vendas)
+    +opDestinatarios(vendas)
+    +opCombos(vendas)
+    +opProdutos(vendas)
+    +opFaixas(vendas)
+    +opOcasioes(vendas)
+    +opSazonalidade(vendas)
+    +opOrigemBairro(vendas);
 }
 
 // Quais problemas mais aconteceram no mes, do mais frequente pro menos.
