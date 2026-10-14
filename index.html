@@ -1307,8 +1307,8 @@ function toggleIndicacao(val){
 function buscarIndicado(val){
   const el=document.getElementById('fc-indicado-resultado');
   if(val.length<2){el.innerHTML='';return;}
-  const found=clientes.filter(c=>c.nome?.toLowerCase().includes(val.toLowerCase())).slice(0,5);
-  el.innerHTML=found.length?found.map(c=>`<div onclick="selecionarIndicado('${c.id}','${c.nome}')" style="padding:.5rem .75rem;border:1px solid var(--borda);border-radius:8px;margin-bottom:.3rem;cursor:pointer;background:var(--creme);font-size:13px">${c.nome} <span style="color:var(--muted);font-size:11px">${c.whats||''}</span></div>`).join(''):'';
+  const found=clientes.filter(c=>casaPessoa(c,val)).slice(0,5);
+  el.innerHTML=found.length?found.map(c=>`<div onclick="selecionarIndicado('${c.id}','${c.nome}')" style="padding:.5rem .75rem;border:1px solid var(--borda);border-radius:8px;margin-bottom:.3rem;cursor:pointer;background:var(--creme);font-size:13px">${c.nome} <span style="color:var(--muted);font-size:11px">${[c.whats,c.whats2].filter(Boolean).join(' · ')}</span></div>`).join(''):'';
 }
 function selecionarIndicado(id,nome){
   document.getElementById('fc-indicado-id').value=id;
@@ -1346,9 +1346,9 @@ function buscarDestinatario(val){
   const el=document.getElementById('fp-dest-resultado');
   document.getElementById('fp-dest-id').value='';
   if(val.length<2){el.innerHTML='';return;}
-  const found=clientes.filter(c=>c.nome?.toLowerCase().includes(val.toLowerCase())).slice(0,4);
+  const found=clientes.filter(c=>casaPessoa(c,val)).slice(0,4);
   if(!found.length){el.innerHTML='';return;}
-  el.innerHTML=found.map(c=>`<div onclick="selecionarDestinatario('${c.id}','${c.nome}')" style="padding:.5rem .75rem;border:1px solid var(--borda);border-radius:8px;margin-bottom:.3rem;cursor:pointer;background:var(--creme);font-size:13px">${c.nome} <span style="color:var(--muted);font-size:11px">${c.whats||''}</span></div>`).join('');
+  el.innerHTML=found.map(c=>`<div onclick="selecionarDestinatario('${c.id}','${c.nome}')" style="padding:.5rem .75rem;border:1px solid var(--borda);border-radius:8px;margin-bottom:.3rem;cursor:pointer;background:var(--creme);font-size:13px">${c.nome} <span style="color:var(--muted);font-size:11px">${[c.whats,c.whats2].filter(Boolean).join(' · ')}</span></div>`).join('');
 }
 function selecionarDestinatario(id,nome){
   document.getElementById('fp-dest-id').value=id;
@@ -1359,8 +1359,8 @@ function buscarAniversariante(val){
   const el=document.getElementById('fp-aniv-resultado');
   document.getElementById('fp-aniv-id').value='';
   if(val.length<2){el.innerHTML='';return;}
-  const found=clientes.filter(c=>c.nome?.toLowerCase().includes(val.toLowerCase())).slice(0,5);
-  el.innerHTML=found.length?found.map(c=>{const aniver=c.aniver||'';return`<div onclick="selecionarAniversariante('${c.id}','${c.nome}','${aniver}')" style="padding:.5rem .75rem;border:1px solid var(--borda);border-radius:8px;margin-bottom:.3rem;cursor:pointer;background:var(--creme);font-size:13px">${c.nome} <span style="color:var(--muted);font-size:11px">${c.whats||''}</span></div>`}).join(''):'';
+  const found=clientes.filter(c=>casaPessoa(c,val)).slice(0,5);
+  el.innerHTML=found.length?found.map(c=>{const aniver=c.aniver||'';return`<div onclick="selecionarAniversariante('${c.id}','${c.nome}','${aniver}')" style="padding:.5rem .75rem;border:1px solid var(--borda);border-radius:8px;margin-bottom:.3rem;cursor:pointer;background:var(--creme);font-size:13px">${c.nome} <span style="color:var(--muted);font-size:11px">${[c.whats,c.whats2].filter(Boolean).join(' · ')}</span></div>`}).join(''):'';
 }
 function selecionarAniversariante(id,nome,aniver){
   document.getElementById('fp-aniv-id').value=id;
@@ -1547,7 +1547,7 @@ function renderCards(){
       <div class="avatar" style="background:${avatarCor(c.nome)}">${iniciais(c.nome)}</div>
       <div class="cli-info">
         <div class="cli-nome">${anivDias!==null?'🎂 ':''  }${c.nome}</div>
-        <div class="cli-sub">${c.bairro||c.whats||'—'}</div>
+        <div class="cli-sub">${[c.whats,c.whats2].filter(Boolean).join(' · ')||'—'}${c.bairro?' · '+c.bairro:''}</div>
       </div>
       <button class="lead-btn${c.lead?' on':''}" title="${c.lead?'É um lead: já falou com você, mas nunca comprou. Toque para tirar.':'Marcar como lead (já entrou em contato, nunca comprou)'}"
         onclick="event.stopPropagation();alternarLead('${c.id}',this)">🌱</button>
@@ -2629,12 +2629,23 @@ function abrirModalVinculo(cliId){
   document.getElementById('modal-vinculo').style.display='flex';
   setTimeout(()=>document.getElementById('fv-busca').focus(),100);
 }
+/* Busca de pessoa pelo nome OU por qualquer um dos dois números.
+   Compara só os dígitos, então "733" acha "(49) 98897-2793". */
+function casaPessoa(c,val){
+  const t=(val||'').trim().toLowerCase();
+  if(!t)return false;
+  if(c.nome&&c.nome.toLowerCase().includes(t))return true;
+  const d=t.replace(/\D/g,'');
+  if(d.length<3)return false;
+  return [c.whats,c.whats2].some(w=>w&&w.replace(/\D/g,'').includes(d));
+}
+
 function buscarVinculo(val){
   const el=document.getElementById('fv-resultado');
   if(val.length<2){el.innerHTML='';return;}
   const cliId=document.getElementById('fv-cli-id').value;
-  const found=clientes.filter(c=>c.id!==cliId&&c.nome?.toLowerCase().includes(val.toLowerCase())).slice(0,5);
-  el.innerHTML=found.map(c=>`<div onclick="selecionarVinculo('${c.id}','${c.nome}')" style="padding:.5rem .75rem;border:1px solid var(--borda);border-radius:8px;margin-bottom:.3rem;cursor:pointer;background:var(--creme);font-size:13px">${c.nome} <span style="color:var(--muted);font-size:11px">${c.whats||''}</span></div>`).join('');
+  const found=clientes.filter(c=>c.id!==cliId&&casaPessoa(c,val)).slice(0,5);
+  el.innerHTML=found.map(c=>`<div onclick="selecionarVinculo('${c.id}','${c.nome}')" style="padding:.5rem .75rem;border:1px solid var(--borda);border-radius:8px;margin-bottom:.3rem;cursor:pointer;background:var(--creme);font-size:13px">${c.nome} <span style="color:var(--muted);font-size:11px">${[c.whats,c.whats2].filter(Boolean).join(' · ')}</span></div>`).join('');
 }
 function selecionarVinculo(id,nome){
   vinculoDestino={id,nome};
