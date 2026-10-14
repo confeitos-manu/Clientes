@@ -71,6 +71,10 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
 .tag-frequente{background:var(--verde-bg);color:var(--verde)}
 .tag-eventual{background:#f4ede8;color:#8a5c3e}
 .tag-corporativo{background:#eae8f4;color:#4a3e8a}
+.tag-lead{background:#fdf1dc;color:#8a6a1e}
+.lead-btn{background:var(--creme2);border:1px solid var(--borda);border-radius:50%;width:34px;height:34px;flex:none;font-size:15px;cursor:pointer;opacity:.45;filter:grayscale(1);transition:.15s;padding:0}
+.lead-btn:hover{opacity:.9}
+.lead-btn.on{opacity:1;filter:none;background:#fdf1dc;border-color:#e6cf9a}
 .tag-novo{background:var(--rosa-bg);color:#8a3e55}
 .pontos-badge{font-size:11px;color:var(--dourado);margin-top:2px;font-weight:500}
 .recebeu-badge{font-size:11px;color:var(--azul);margin-top:2px}
@@ -233,9 +237,6 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
   .nav{padding-left:max(0px,calc((100% - 1180px)/2));padding-right:max(0px,calc((100% - 1180px)/2))}
   .nav-item{flex:0 0 auto;min-width:104px;font-size:12px}
   .nav-item.so-celular{display:none!important}
-  /* o mesmo aviso ja aparece na coluna da direita */
-  #alertas-mini{display:none}
-  .painel-carregar{display:block}
 
   .main{
     max-width:1180px;
@@ -262,6 +263,55 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
   }
   .main > div[id^="aba-"]{grid-row:1 / span 9}
   .main > #aba-alertas, .main > #aba-datas{grid-row:auto}
+  /* ===== Oportunidades ===== */
+  .op-acoes{background:var(--verde-bg);border:1px solid var(--verde-claro);border-radius:12px;padding:.9rem 1rem;margin-bottom:.9rem}
+  .op-acoes-t{font-size:13.5px;font-weight:700;color:#2a6a3a;margin-bottom:.4rem}
+  .op-acoes ol{margin:0;padding-left:1.1rem}
+  .op-acoes li{font-size:13px;color:var(--cinza);margin-bottom:.3rem;line-height:1.5}
+  .op-card{background:var(--branco);border:1px solid var(--borda);border-radius:12px;padding:.9rem 1rem;margin-bottom:.9rem}
+  .op-titulo{font-family:'Fraunces',serif;font-size:15.5px;font-weight:600;color:var(--cinza)}
+  .op-sub{font-size:11.5px;color:var(--muted);margin:.1rem 0 .6rem}
+  .op-dica{font-size:12px;color:#6a5a4a;background:var(--creme2);border-radius:8px;padding:.5rem .65rem;margin-top:.6rem;line-height:1.5}
+  .op-vazio{font-size:12.5px;color:var(--muted);padding:.5rem 0}
+  .op-linha{display:flex;align-items:center;gap:.5rem;padding:.45rem 0;border-top:1px solid var(--borda)}
+  .op-linha:first-of-type{border-top:none}
+  .op-linha-info{flex:1;min-width:0;cursor:pointer}
+  .op-nome{font-size:13.5px;font-weight:600;color:var(--cinza)}
+  .op-meta{font-size:11.5px;color:var(--muted);line-height:1.45}
+  .op-tag{display:inline-block;color:#fff;font-size:10px;font-weight:600;border-radius:10px;padding:1px 7px;vertical-align:middle}
+  .op-zap{background:#25d366;color:#fff;font-size:11.5px;font-weight:600;border-radius:8px;padding:.35rem .6rem;text-decoration:none;white-space:nowrap}
+  .op-segs{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:.5rem}
+  .op-seg{background:var(--creme2);border:1px solid var(--borda);border-radius:10px;padding:.55rem;text-align:center;cursor:pointer}
+  .op-seg-num{font-size:19px;font-weight:700}
+  .op-seg-nome{font-size:11px;color:var(--cinza)}
+  .op-seg-val{font-size:10.5px;color:var(--muted)}
+  .op-seg-box{margin-top:.7rem;border-top:1px solid var(--borda);padding-top:.5rem}
+  .op-seg-head{font-size:13px;font-weight:600;color:var(--cinza)}
+  .op-barras{display:flex;flex-direction:column;gap:.3rem}
+  .op-barra-linha{display:flex;align-items:center;gap:.5rem;font-size:11.5px;color:var(--cinza)}
+  .op-barra-linha.op-agora{font-weight:700}
+  .op-barra-lbl{width:92px;flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .op-barra-fundo{flex:1;height:10px;background:var(--creme2);border-radius:6px;overflow:hidden}
+  .op-barra{display:block;height:100%;background:var(--verde);border-radius:6px}
+  .op-barra-val{width:110px;flex:none;text-align:right;color:var(--muted)}
+  .op-barra-extra{font-size:10.5px;color:var(--muted);margin:-.1rem 0 .25rem 100px}
+  .op-subtitulo{font-size:12px;font-weight:600;color:var(--cinza);margin-bottom:.35rem}
+  .op-duas{display:grid;gap:.9rem}
+  @media(min-width:900px){
+    .op-duas{grid-template-columns:1fr 1fr}
+    #aba-oportunidades{display:grid;gap:0}
+  }
+
+  /* listas da lateral com altura limitada e rolagem propria:
+     assim a pagina nao fica enorme e nao "pula pro final" ao salvar */
+  .main > #aba-alertas:not(.em-foco) #alerta-aniversarios,
+  .main > #aba-alertas:not(.em-foco) #alerta-inativos,
+  .main > #aba-alertas:not(.em-foco) #alerta-destinatarios,
+  .main > #aba-datas:not(.em-foco) #varredura-resultado,
+  .main > #aba-datas:not(.em-foco) #datas-ano-passado,
+  .main > #aba-datas:not(.em-foco) #datas-calendario{
+    max-height:230px;overflow-y:auto;overscroll-behavior:contain;padding-right:4px;
+  }
   /* clicou no botao do painel: ele sai da lateral e ocupa a coluna grande */
   .main > #aba-alertas.em-foco, .main > #aba-datas.em-foco{
     grid-column:1;grid-row:1 / span 9;background:var(--creme);
@@ -273,9 +323,6 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
   }
 }
 .painel-titulo{display:none}
-.painel-carregar{display:none;padding:.7rem .85rem;border-bottom:1px solid var(--borda);background:var(--dourado-bg)}
-.painel-carregar p{font-size:11.5px;color:var(--cinza);line-height:1.5;margin-bottom:.5rem}
-.painel-carregar button{width:100%;padding:.5rem;border:1px solid var(--dourado);background:var(--branco);color:var(--texto);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
 
 .login-screen{position:fixed;inset:0;background:var(--verde);display:flex;align-items:center;justify-content:center;z-index:1000;padding:1.5rem}
 .login-box{background:var(--branco);border-radius:20px;padding:2rem 1.75rem;width:100%;max-width:360px;text-align:center}
@@ -322,6 +369,7 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
   <div class="nav-item" onclick="mudarAba('alertas',this)">🔔 Alertas</div>
   <div class="nav-item" onclick="mudarAba('datas',this)">📅 Datas</div>
   <div class="nav-item" onclick="mudarAba('relatorio',this)">📈 Relatório</div>
+  <div class="nav-item" onclick="mudarAba('oportunidades',this)">💡 Oportunidades</div>
   <div class="nav-item" onclick="mudarAba('resumo',this)">📊 Resumo</div>
   <div class="nav-item" onclick="mudarAba('pontos',this)">⭐ Pontos</div>
   <div class="nav-item" onclick="mudarAba('cadastros',this)">⚙️</div>
@@ -335,7 +383,7 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
     <div class="stat"><div class="stat-num" id="s-total">0</div><div class="stat-label">Clientes</div></div>
     <div class="stat"><div class="stat-num" id="s-pedidos">0</div><div class="stat-label">Pedidos</div></div>
     <div class="stat"><div class="stat-num" id="s-ticket">R$0</div><div class="stat-label">Ticket médio</div></div>
-    <div class="stat"><div class="stat-num" id="s-freq">0</div><div class="stat-label">Frequentes</div></div>
+    <div class="stat" onclick="filtrarLeads()" style="cursor:pointer"><div class="stat-num" id="s-leads">0</div><div class="stat-label">🌱 Leads</div></div>
   </div>
   <div class="filtros">
     <div class="filtros-row">
@@ -346,6 +394,7 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
         <option value="eventual">Eventual</option>
         <option value="corporativo">Corporativo</option>
         <option value="novo">Novo</option>
+        <option value="__lead">🌱 Lead (nunca comprou)</option>
       </select>
     </div>
     <div class="filtros-row">
@@ -363,7 +412,6 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
 <!-- ALERTAS -->
 <div id="aba-alertas" style="display:none">
   <span class="painel-titulo">🔔 Alertas</span>
-  <div class="painel-carregar" id="carregar-alertas"><p>Calcular aniversários e clientes inativos precisa ler os pedidos de todos os clientes — leva um tempo.</p><button onclick="carregarPainel('alertas')">↻ Carregar</button></div>
   <div class="resumo-pad">
     <div class="resumo-card">
       <div class="section-header"><h3>🎂 Aniversários próximos (15 dias)</h3><span class="badge-count" id="badge-aniv">0</span></div>
@@ -384,7 +432,6 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
 <!-- DATAS QUENTES -->
 <div id="aba-datas" style="display:none">
   <span class="painel-titulo">📅 Datas quentes</span>
-  <div class="painel-carregar" id="carregar-datas"><p>Calcular as datas quentes precisa ler os pedidos de todos os clientes — leva um tempo.</p><button onclick="carregarPainel('datas')">↻ Carregar</button></div>
   <div class="resumo-pad">
     <div class="resumo-card">
       <div class="section-header"><h3>🔍 Pedidos sem ocasião marcada</h3></div>
@@ -421,13 +468,26 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
     </div>
     <div class="resumo-card">
       <h3>💰 Custos por produto</h3>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:.75rem">Informe o custo de cada produto conforme sua <a href="https://precificacao-omega.vercel.app/" target="_blank" style="color:var(--verde)">planilha de precificação</a>.</p>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:.75rem">O custo vem sozinho da <a href="https://insumos-confeitos.vercel.app/" target="_blank" style="color:var(--verde)">precificação (app de Insumos › Produtos)</a> quando o produto está ligado ao código do catálogo. Digite aqui só se quiser trocar.</p>
       <div id="rel-custos-lista"></div>
     </div>
   </div>
 </div>
 
 <!-- RESUMO -->
+<div id="aba-oportunidades" style="display:none">
+  <div class="card" style="margin-bottom:.9rem">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap">
+      <div>
+        <h2 style="margin:0">💡 Oportunidades</h2>
+        <p style="font-size:12px;color:var(--muted);margin:.2rem 0 0">O que os seus próprios pedidos já dizem sobre a próxima venda.</p>
+      </div>
+      <button class="btn-sm" onclick="renderOportunidades()">↻ Atualizar</button>
+    </div>
+  </div>
+  <div id="op-conteudo"></div>
+</div>
+
 <div id="aba-resumo" style="display:none">
   <div class="resumo-pad" id="resumo-content"><div class="empty"><div class="empty-icon">📊</div><p>Carregando...</p></div></div>
 </div>
@@ -582,7 +642,11 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
         <span style="font-size:13px;font-weight:500;color:var(--cinza)">Total produtos</span>
         <span style="font-size:15px;font-weight:600;color:var(--verde)" id="fp-total-label">R$ 0,00</span>
       </div>
-      <div class="fs"><label>Frete (R$)</label><input type="number" id="fp-entrega" placeholder="0,00" min="0" step="0.01"></div>
+      <div class="fs"><label>Frete (R$)</label><input type="number" id="fp-entrega" placeholder="0,00" min="0" step="0.01" oninput="calcTotalItens()"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;background:var(--verde-bg);border:1px solid var(--verde-claro);border-radius:8px;padding:.6rem .8rem;margin:-.3rem 0 .75rem">
+        <span style="font-size:13px;font-weight:600;color:var(--verde)">Total com entrega</span>
+        <span style="font-size:17px;font-weight:700;color:var(--verde)" id="fp-total-geral">R$ 0,00</span>
+      </div>
       <div class="frow">
         <div class="fs"><label>Confirmação</label><input type="date" id="fp-data-conf" onchange="syncDataEntrega()"></div>
         <div class="fs"><label>Entrega</label><input type="date" id="fp-data" onchange="marcarEntregaManual()"></div>
@@ -605,7 +669,37 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
         </div>
         <div class="frow">
           <div class="fs"><label>Detalhes (opcional)</label>
-            <input type="text" id="fp-problema-obs" placeholder="O que aconteceu, como resolveu...">
+            <input type="text" id="fp-problema-obs" placeholder="O que aconteceu">
+          </div>
+        </div>
+        <div class="frow">
+          <div class="fs"><label>O que foi feito para resolver</label>
+            <select id="fp-problema-solucao-tipo">
+              <option value="">— escolha —</option>
+              <option>Refiz o produto</option>
+              <option>Enviei o item que faltava</option>
+              <option>Reentreguei</option>
+              <option>Devolvi o valor</option>
+              <option>Devolvi parte do valor</option>
+              <option>Desconto na próxima compra</option>
+              <option>Brinde na próxima compra</option>
+              <option>Pedi desculpas, cliente aceitou</option>
+              <option>Nada foi feito ainda</option>
+              <option value="Outro">Outro (escrevo abaixo)</option>
+            </select>
+          </div>
+          <div class="fs"><label>Resolvido?</label>
+            <select id="fp-problema-resolvido">
+              <option value="">— </option>
+              <option value="sim">✅ Sim, cliente satisfeita</option>
+              <option value="parcial">🟡 Em parte</option>
+              <option value="nao">❌ Ainda em aberto</option>
+            </select>
+          </div>
+        </div>
+        <div class="frow">
+          <div class="fs"><label>Detalhes da solução (opcional)</label>
+            <input type="text" id="fp-problema-solucao-obs" placeholder="Ex: refiz e entreguei no dia seguinte, sem cobrar o frete">
           </div>
         </div>
       </div>
@@ -666,10 +760,10 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
       </div>
       <div class="fs"><label>Observações</label><textarea id="fp-obs" placeholder="Detalhes especiais, recados..."></textarea></div>
       <div class="fs">
-        <label>Foto do pedido</label>
+        <label>Fotos do pedido (até 4)</label>
         <input type="hidden" id="fp-foto">
         <div id="fp-foto-preview" style="margin-bottom:.5rem"></div>
-        <input type="file" id="fp-foto-input" accept="image/*" style="display:none" onchange="processarFotoPedido(this)">
+        <input type="file" id="fp-foto-input" accept="image/*" multiple style="display:none" onchange="processarFotoPedido(this)">
         <button type="button" id="fp-foto-btn" onclick="document.getElementById('fp-foto-input').click()" style="width:100%;background:var(--creme2);color:var(--cinza);border:1px dashed var(--borda);border-radius:8px;padding:.6rem;font-size:13px;cursor:pointer;font-family:'Inter',sans-serif">📷 Escolher foto</button>
       </div>
       <div class="form-actions">
@@ -772,7 +866,7 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
   <div class="modal">
     <div class="modal-head"><h2>💰 Custo do produto</h2><button class="btn-x" onclick="fechar('modal-custo')">×</button></div>
     <div class="modal-body">
-      <p style="font-size:13px;color:var(--cinza);margin-bottom:1rem">Informe o custo de produção conforme sua planilha de precificação.</p>
+      <p style="font-size:13px;color:var(--cinza);margin-bottom:1rem">O custo vem da precificação (app de Insumos › Produtos). Digite aqui só se quiser trocar.</p>
       <input type="hidden" id="custo-produto-nome">
       <div id="custo-dica" style="font-size:12px;color:#8a6a30;background:var(--dourado-bg);border:1px solid var(--dourado);border-radius:8px;padding:.5rem .7rem;margin-bottom:.75rem"></div>
       <div class="fs"><label>Produto</label><input type="text" id="custo-produto-label" disabled></div>
@@ -866,16 +960,22 @@ let appIniciado=false;
 function iniciarApp(){
   if(appIniciado)return;
   appIniciado=true;
-  document.getElementById('data-hoje').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})+' · v12';
+  window.addEventListener('error',e=>{ console.error('erro na tela:',e.message); });
+  document.getElementById('data-hoje').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})+' · v14';
   inicializarListeners();
+  preencherSelectsDeOcasiao();
+  // com o catálogo carregado, o custo passa a ser achado pelo código
   carregarCatalogo();
 }
 
-// Verifica se já está logado — depois de todas as declarações
+// Verifica se já está logado. O iniciarApp espera o resto do arquivo ser lido:
+// ele usa constantes declaradas mais abaixo (CAT_URL/CAT_KEY do catálogo).
 if(sessionStorage.getItem('auth')==='ok'){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app-content').style.display='block';
-  iniciarApp();
+  // try/catch: se algo falhar no início (banco fora do ar, por exemplo),
+  // o resto do app continua funcionando em vez de travar os botões.
+  setTimeout(()=>{ try{ iniciarApp(); }catch(e){ console.error('início:',e); } },0);
 }
 
 function inicializarListeners(){
@@ -927,59 +1027,152 @@ function syncDataEntrega(){
 // ── FOTO DO PEDIDO ────────────────────────────────────────────────
 // A foto é encolhida antes de salvar. Sem isso, uma foto do celular
 // (3-8 MB) não caberia no banco — o limite por pedido é 1 MB.
-function processarFotoPedido(input){
-  const file=input.files&&input.files[0];
-  if(!file)return;
-  const btn=document.getElementById('fp-foto-btn');
-  btn.textContent='Processando...';btn.disabled=true;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    const img=new Image();
-    img.onload=()=>{
-      const MAX=900;
-      let w=img.width,h=img.height;
-      if(w>h&&w>MAX){h=Math.round(h*MAX/w);w=MAX;}
-      else if(h>=w&&h>MAX){w=Math.round(w*MAX/h);h=MAX;}
-      const cv=document.createElement('canvas');cv.width=w;cv.height=h;
-      cv.getContext('2d').drawImage(img,0,0,w,h);
-      let q=0.72,dados=cv.toDataURL('image/jpeg',q);
-      // Se ainda estiver grande, comprime mais até caber com folga
-      while(dados.length>700000&&q>0.35){q-=0.12;dados=cv.toDataURL('image/jpeg',q);}
-      document.getElementById('fp-foto').value=dados;
-      renderPreviewFoto();
-      btn.textContent='📷 Trocar foto';btn.disabled=false;
-      input.value='';
+const MAX_FOTOS = 4;
+const ORCAMENTO_FOTOS = 720000;   // soma de todas as fotos de um pedido
+let fotosPedido = [];
+
+// Encolhe e comprime até caber no espaço que sobra para cada foto.
+function comprimirFoto(origem, limite){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 900;
+      let w = img.width, h = img.height;
+      if(w > h && w > MAX){ h = Math.round(h * MAX / w); w = MAX; }
+      else if(h >= w && h > MAX){ w = Math.round(w * MAX / h); h = MAX; }
+      const desenhar = (lw, lh) => {
+        const cv = document.createElement('canvas');
+        cv.width = lw; cv.height = lh;
+        cv.getContext('2d').drawImage(img, 0, 0, lw, lh);
+        return cv;
+      };
+      let cv = desenhar(w, h);
+      let q = 0.72, dados = cv.toDataURL('image/jpeg', q);
+      while(dados.length > limite && q > 0.3){ q -= 0.1; dados = cv.toDataURL('image/jpeg', q); }
+      // ainda grande: diminui o tamanho da imagem
+      let tentativas = 0;
+      while(dados.length > limite && tentativas < 4){
+        w = Math.round(w * 0.8); h = Math.round(h * 0.8);
+        cv = desenhar(w, h);
+        q = 0.6; dados = cv.toDataURL('image/jpeg', q);
+        while(dados.length > limite && q > 0.3){ q -= 0.1; dados = cv.toDataURL('image/jpeg', q); }
+        tentativas++;
+      }
+      resolve(dados);
     };
-    img.onerror=()=>{alert('Não consegui ler essa imagem. Tente outra foto.');btn.textContent='📷 Escolher foto';btn.disabled=false;input.value='';};
-    img.src=ev.target.result;
-  };
-  reader.onerror=()=>{alert('Erro ao abrir o arquivo.');btn.textContent='📷 Escolher foto';btn.disabled=false;input.value='';};
-  reader.readAsDataURL(file);
+    img.onerror = () => reject(new Error('imagem inválida'));
+    img.src = origem;
+  });
+}
+
+function lerArquivo(file){
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = ev => resolve(ev.target.result);
+    r.onerror = () => reject(new Error('erro ao abrir o arquivo'));
+    r.readAsDataURL(file);
+  });
+}
+
+// Com mais fotos, cada uma ganha uma fatia menor do espaço.
+async function reequilibrarFotos(){
+  if(!fotosPedido.length) return;
+  const limite = Math.floor(ORCAMENTO_FOTOS / fotosPedido.length);
+  for(let i = 0; i < fotosPedido.length; i++){
+    if(fotosPedido[i].length > limite){
+      try{ fotosPedido[i] = await comprimirFoto(fotosPedido[i], limite); }catch(e){}
+    }
+  }
+}
+
+async function processarFotoPedido(input){
+  const files = Array.from(input.files || []);
+  if(!files.length) return;
+  const btn = document.getElementById('fp-foto-btn');
+  btn.textContent = 'Processando...'; btn.disabled = true;
+
+  const cabem = MAX_FOTOS - fotosPedido.length;
+  if(files.length > cabem) alert(`Cabem mais ${cabem} foto${cabem===1?'':'s'} neste pedido. Vou usar a${cabem===1?'':'s'} primeira${cabem===1?'':'s'}.`);
+
+  for(const file of files.slice(0, Math.max(cabem, 0))){
+    try{
+      const bruto = await lerArquivo(file);
+      const limite = Math.floor(ORCAMENTO_FOTOS / Math.min(fotosPedido.length + 1, MAX_FOTOS));
+      fotosPedido.push(await comprimirFoto(bruto, limite));
+    }catch(e){
+      alert('Não consegui ler essa imagem. Tente outra foto.');
+    }
+  }
+  await reequilibrarFotos();
+  renderPreviewFoto();
+  input.value = '';
+  btn.disabled = false;
+  atualizarBotaoFoto();
+}
+
+function atualizarBotaoFoto(){
+  const btn = document.getElementById('fp-foto-btn');
+  if(!btn) return;
+  const n = fotosPedido.length;
+  if(!n){ btn.textContent = '📷 Escolher foto'; btn.style.display = ''; return; }
+  btn.textContent = n >= MAX_FOTOS ? '📷 Limite de 4 fotos' : `📷 Adicionar foto (${n}/${MAX_FOTOS})`;
+  btn.style.display = n >= MAX_FOTOS ? 'none' : '';
 }
 
 function renderPreviewFoto(){
-  const v=document.getElementById('fp-foto').value;
-  const el=document.getElementById('fp-foto-preview');
-  const btn=document.getElementById('fp-foto-btn');
-  if(!v){el.innerHTML='';if(btn)btn.textContent='📷 Escolher foto';return;}
-  el.innerHTML=`<div style="position:relative;display:inline-block">
-    <img src="${v}" style="max-width:100%;max-height:180px;border-radius:10px;border:1px solid var(--borda);display:block">
-    <button type="button" onclick="removerFotoPedido()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:26px;height:26px;font-size:15px;cursor:pointer;line-height:1">×</button>
-  </div>`;
-  if(btn)btn.textContent='📷 Trocar foto';
+  const el = document.getElementById('fp-foto-preview');
+  document.getElementById('fp-foto').value = fotosPedido[0] || '';
+  if(!el) return;
+  el.innerHTML = fotosPedido.length
+    ? `<div style="display:flex;gap:.4rem;flex-wrap:wrap">${fotosPedido.map((f, i) => `
+        <div style="position:relative">
+          <img src="${f}" onclick="abrirFotoGrande(null,${i})" style="width:92px;height:92px;object-fit:cover;border-radius:10px;border:1px solid var(--borda);display:block;cursor:zoom-in">
+          ${i===0?'<span style="position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,.6);color:#fff;font-size:9.5px;border-radius:4px;padding:1px 5px">capa</span>':''}
+          <button type="button" onclick="removerFotoPedido(${i})" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:24px;height:24px;font-size:14px;cursor:pointer;line-height:1">×</button>
+        </div>`).join('')}</div>`
+    : '';
+  atualizarBotaoFoto();
 }
 
-function removerFotoPedido(){
-  document.getElementById('fp-foto').value='';
+async function removerFotoPedido(i){
+  fotosPedido.splice(i, 1);
+  await reequilibrarFotos();
   renderPreviewFoto();
 }
 
-function abrirFotoGrande(src){
-  const o=document.createElement('div');
-  o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:2000;display:flex;align-items:center;justify-content:center;padding:1rem;cursor:zoom-out';
-  o.innerHTML=`<img src="${src}" style="max-width:100%;max-height:100%;border-radius:8px">`;
-  o.onclick=()=>o.remove();
+// Galeria: abre uma foto e passa para as outras do mesmo pedido
+function abrirFotoGrande(src, indice, lista){
+  const fotos = lista || (src ? [src] : fotosPedido);
+  let i = indice || 0;
+  if(!fotos.length) return;
+  const o = document.createElement('div');
+  o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:2000;display:flex;align-items:center;justify-content:center;padding:1rem;cursor:zoom-out';
+  const pintar = () => {
+    o.innerHTML = `<img src="${fotos[i]}" style="max-width:100%;max-height:100%;border-radius:8px">`
+      + (fotos.length > 1 ? `
+        <button style="position:absolute;left:10px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.9);border:none;border-radius:50%;width:44px;height:44px;font-size:20px;cursor:pointer">‹</button>
+        <button style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.9);border:none;border-radius:50%;width:44px;height:44px;font-size:20px;cursor:pointer">›</button>
+        <div style="position:absolute;bottom:18px;left:0;right:0;text-align:center;color:#fff;font-size:13px">${i+1} de ${fotos.length}</div>` : '');
+    const bts = o.querySelectorAll('button');
+    if(bts[0]) bts[0].onclick = e => { e.stopPropagation(); i = (i - 1 + fotos.length) % fotos.length; pintar(); };
+    if(bts[1]) bts[1].onclick = e => { e.stopPropagation(); i = (i + 1) % fotos.length; pintar(); };
+  };
+  pintar();
+  o.onclick = () => o.remove();
   document.body.appendChild(o);
+}
+
+function fotosDoPedido(p){
+  if(!p) return [];
+  if(Array.isArray(p.fotos) && p.fotos.length) return p.fotos;
+  return p.foto ? [p.foto] : [];
+}
+// As fotos de cada pedido desenhado na tela ficam guardadas aqui: os pedidos
+// vêm de outra consulta, então não dá para procurá-los dentro do cliente.
+const fotosNaTela = {};
+function abrirFotosDoPedido(pedId, i){
+  const fs = fotosNaTela[pedId] || [];
+  if(fs.length) abrirFotoGrande(null, i || 0, fs);
 }
 
 function marcarEntregaManual(){document.getElementById('fp-data').dataset.auto='';}
@@ -998,7 +1191,9 @@ function exibeData(s){
 function diasParaHoje(isoDate){if(!isoDate)return null;return Math.round((new Date(isoDate+'T12:00')-new Date())/(1000*60*60*24));}
 function ocasiaoLabel(o){
   if(cadastros.ocasiao?.includes(o))return'🎉 '+o;
-  return{'dia-das-mulheres':'👩 Dia das Mulheres',aniversario:'🎂 Aniversário','dia-das-maes':'💐 Dia das Mães','dia-dos-namorados':'❤️ Namorados',natal:'🎄 Natal',casamento:'💍 Casamento',formatura:'🎓 Formatura','dia-dos-pais':'👨 Dia dos Pais',pascoa:'🐣 Páscoa','sem-ocasiao':'Sem ocasião',outro:'Outro'}[o]||o||'—';
+  const doCalendario={};
+  datasComemorativas(new Date().getFullYear()).forEach(d=>{doCalendario[d.key]=d.icon+' '+d.nome;});
+  return{...doCalendario,aniversario:'🎂 Aniversário','dia-dos-namorados':'❤️ Namorados',casamento:'💍 Casamento',formatura:'🎓 Formatura','cha-de-bebe':'🍼 Chá de bebê',agradecimento:'🙏 Agradecimento','sem-ocasiao':'Sem ocasião',outro:'Outro'}[o]||o||'—';
 }
 // Datas móveis do calendário — precisam ser globais porque são usadas
 // tanto na aba Datas quanto na detecção de ocasião ao salvar o pedido.
@@ -1006,6 +1201,37 @@ function calcPascoa(ano){
   const a=ano%19,b=Math.floor(ano/100),c=ano%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mes=Math.floor((h+l-7*m+114)/31),dia=(h+l-7*m+114)%31+1;
   return`${ano}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
 }
+// Última sexta-feira de novembro (Black Friday)
+function ultimaSextaNovembro(ano){
+  const d=new Date(ano,10,30);
+  while(d.getDay()!==5)d.setDate(d.getDate()-1);
+  return `${ano}-11-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+/* Todas as datas comemorativas que valem venda de presente.
+   Para acrescentar outra, basta incluir uma linha aqui —
+   ela aparece no calendário e na lista de ocasiões do pedido. */
+function datasComemorativas(ano){
+  return[
+    {key:'dia-das-mulheres',nome:'Dia das Mulheres',icon:'👩',data:`${ano}-03-08`},
+    {key:'pascoa',nome:'Páscoa',icon:'🐣',data:calcPascoa(ano)},
+    {key:'dia-das-maes',nome:'Dia das Mães',icon:'💐',data:primeiroDomingo(ano,5,2)},
+    {key:'dia-dos-namorados',nome:'Dia dos Namorados',icon:'❤️',data:`${ano}-06-12`},
+    {key:'sao-joao',nome:'Festa Junina / São João',icon:'🎇',data:`${ano}-06-24`},
+    {key:'dia-do-amigo',nome:'Dia do Amigo',icon:'🤝',data:`${ano}-07-20`},
+    {key:'dia-dos-avos',nome:'Dia dos Avós',icon:'👵',data:`${ano}-07-26`},
+    {key:'dia-dos-pais',nome:'Dia dos Pais',icon:'👨',data:primeiroDomingo(ano,8,2)},
+    {key:'dia-do-cliente',nome:'Dia do Cliente',icon:'🛍️',data:`${ano}-09-15`},
+    {key:'dia-da-secretaria',nome:'Dia da Secretária',icon:'💼',data:`${ano}-09-30`},
+    {key:'dia-das-criancas',nome:'Dia das Crianças',icon:'🧒',data:`${ano}-10-12`},
+    {key:'dia-dos-professores',nome:'Dia dos Professores',icon:'🍎',data:`${ano}-10-15`},
+    {key:'halloween',nome:'Halloween',icon:'🎃',data:`${ano}-10-31`},
+    {key:'black-friday',nome:'Black Friday',icon:'🛒',data:ultimaSextaNovembro(ano)},
+    {key:'natal',nome:'Natal',icon:'🎄',data:`${ano}-12-25`},
+    {key:'ano-novo',nome:'Ano Novo',icon:'🎆',data:`${ano}-12-31`},
+  ];
+}
+
 function primeiroDomingo(ano,mes,n){
   let d=new Date(ano,mes-1,1);
   while(d.getDay()!==0)d.setDate(d.getDate()+1);
@@ -1021,14 +1247,7 @@ function ocasiaoDaData(iso,janela=3){
   const d=new Date(iso+'T12:00');
   if(isNaN(d))return null;
   const ano=d.getFullYear();
-  const fixas=[
-    {key:'dia-das-mulheres',nome:'Dia das Mulheres',data:`${ano}-03-08`},
-    {key:'pascoa',nome:'Páscoa',data:calcPascoa(ano)},
-    {key:'dia-das-maes',nome:'Dia das Mães',data:primeiroDomingo(ano,5,2)},
-    {key:'dia-dos-namorados',nome:'Dia dos Namorados',data:`${ano}-06-12`},
-    {key:'dia-dos-pais',nome:'Dia dos Pais',data:primeiroDomingo(ano,8,2)},
-    {key:'natal',nome:'Natal',data:`${ano}-12-25`},
-  ];
+  const fixas=datasComemorativas(ano);
   let melhor=null;
   fixas.forEach(f=>{
     if(!f.data)return;
@@ -1043,7 +1262,19 @@ function ocasiaoDaData(iso,janela=3){
   return melhor;
 }
 
-const OCASIOES_FIXAS='<option value="">Não informada</option><option value="aniversario">Aniversário</option><option value="dia-das-mulheres">Dia das Mulheres</option><option value="dia-das-maes">Dia das Mães</option><option value="dia-dos-namorados">Dia dos Namorados</option><option value="natal">Natal</option><option value="casamento">Casamento</option><option value="formatura">Formatura</option><option value="dia-dos-pais">Dia dos Pais</option><option value="pascoa">Páscoa</option><option value="sem-ocasiao">Sem ocasião especial</option><option value="outro">Outro</option>';
+const OCASIOES_FIXAS='<option value="">Não informada</option><option value="aniversario">Aniversário</option>'
+  +datasComemorativas(new Date().getFullYear()).map(d=>`<option value="${d.key}">${d.nome}</option>`).join('')
+  +'<option value="casamento">Casamento</option><option value="formatura">Formatura</option>'
+  +'<option value="cha-de-bebe">Chá de bebê</option><option value="agradecimento">Agradecimento</option>'
+  +'<option value="sem-ocasiao">Sem ocasião especial</option><option value="outro">Outro</option>';
+
+// os dois formulários usam a mesma lista, para nada ficar de fora
+function preencherSelectsDeOcasiao(){
+  ['fp-ocasiao','rec-ocasiao'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el&&!el.dataset.pronto){ el.innerHTML=OCASIOES_FIXAS; el.dataset.pronto='1'; }
+  });
+}
 function atualizarSelectOcasiao(){
   const extras=cadastros.ocasiao.map(o=>`<option value="${o}">${o}</option>`).join('');
   const html=OCASIOES_FIXAS+(extras?`<optgroup label="── Personalizadas ──">${extras}</optgroup>`:'');
@@ -1212,7 +1443,7 @@ async function getPedidosTodos(){
 function mudarAba(aba,el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   el.classList.add('active');
-  ['clientes','alertas','datas','relatorio','resumo','pontos','cadastros','importar'].forEach(a=>{
+  ['clientes','alertas','datas','relatorio','oportunidades','resumo','pontos','cadastros','importar'].forEach(a=>{
     document.getElementById('aba-'+a).style.display=a===aba?'block':'none';
   });
   // No notebook os paineis laterais nao "abrem" numa pagina nova: eles saem
@@ -1222,6 +1453,7 @@ function mudarAba(aba,el){
   });
   if(aba==='alertas')renderAlertas();
   if(aba==='datas')renderDatasQuentes();
+  if(aba==='oportunidades')renderOportunidades();
   if(aba==='resumo')renderResumo();
   if(aba==='pontos')renderPontos();
   if(aba==='cadastros')['produto','ocasiao','bairro','rua','problema'].forEach(renderCadastro);
@@ -1249,7 +1481,8 @@ async function filtrar(){
       const telOk=qDig.length>=3 && [c.whats,c.whats2].some(w=>(w||'').replace(/\D/g,'').includes(qDig));
       if(!nomeOk&&!telOk)return false;
     }
-    if(perfil&&c.tag!==perfil)return false;
+    if(perfil==='__lead'){ if(!c.lead)return false; }
+    else if(perfil&&c.tag!==perfil)return false;
     if(ocasiao||produto||dataF){
       const peds=pedidosPorCliente[c.id]||[];
       if(ocasiao&&!peds.some(p=>p.ocasiao?.toLowerCase().includes(ocasiao)))return false;
@@ -1260,17 +1493,29 @@ async function filtrar(){
   });
   atualizarStats();renderCards();
 }
+function filtrarLeads(){
+  const sel=document.getElementById('f-perfil');
+  sel.value=sel.value==='__lead'?'':'__lead';
+  filtrar();
+}
 function limparFiltros(){['f-busca','f-perfil','f-ocasiao','f-produto','f-data'].forEach(id=>document.getElementById(id).value='');filtrar();}
 
 // ── STATS ─────────────────────────────────────────────
 function atualizarStats(){
-  const totalPeds=Object.values(pedidosPorCliente).reduce((s,p)=>s+p.filter(x=>x.status?.startsWith('finalizado')).length,0);
-  const tickets=clientes.map(c=>calcTicket(pedidosPorCliente[c.id]||[])).filter(t=>t>0);
-  const ticketM=tickets.length?tickets.reduce((a,b)=>a+b,0)/tickets.length:0;
+  // Ticket medio geral = soma de todas as vendas / numero de vendas.
+  // Pedidos com valor 0 (brinde, troca, resgate) ficam de fora dos dois lados,
+  // senao eles puxam a media pra baixo sem terem sido venda.
+  const vendasValidas=Object.values(pedidosPorCliente).flat().filter(p=>
+    (p.status==='finalizado-ok'||p.status==='finalizado-problema') &&
+    (Number(p.valor)||0)>0 &&
+    !p.produto?.startsWith('🎁 Resgate'));
+  const totalPeds=vendasValidas.length;
+  const ticketM=totalPeds?vendasValidas.reduce((s,p)=>s+(Number(p.valor)||0),0)/totalPeds:0;
   document.getElementById('s-total').textContent=clientes.length;
   document.getElementById('s-pedidos').textContent=totalPeds;
   document.getElementById('s-ticket').textContent=ticketM>0?'R$'+Math.round(ticketM):'R$0';
-  document.getElementById('s-freq').textContent=clientes.filter(c=>c.tag==='frequente').length;
+  const elLeads=document.getElementById('s-leads');
+  if(elLeads)elLeads.textContent=clientes.filter(c=>c.lead).length;
 }
 
 // ── ALERTAS MINI (na aba clientes) ────────────────────
@@ -1304,7 +1549,10 @@ function renderCards(){
         <div class="cli-nome">${anivDias!==null?'🎂 ':''  }${c.nome}</div>
         <div class="cli-sub">${c.bairro||c.whats||'—'}</div>
       </div>
+      <button class="lead-btn${c.lead?' on':''}" title="${c.lead?'É um lead: já falou com você, mas nunca comprou. Toque para tirar.':'Marcar como lead (já entrou em contato, nunca comprou)'}"
+        onclick="event.stopPropagation();alternarLead('${c.id}',this)">🌱</button>
       <div class="cli-right">
+        ${c.lead?'<span class="tag tag-lead">Lead</span>':''}
         <span class="tag ${tagClass(c.tag)}">${tagLabel(c.tag)}</span>
         <div class="cli-sub" style="margin-top:3px">${nPeds} pedido${nPeds!==1?'s':''}</div>
         ${nRec>0?`<div class="recebeu-badge">🎁 recebeu ${nRec}x</div>`:''}
@@ -1313,6 +1561,27 @@ function renderCards(){
       </div>
     </div>`;
   }).join('');
+}
+
+/* Marca/desmarca o cliente como LEAD direto na lista, sem abrir a ficha.
+   Lead = já entrou em contato (ou pediu orçamento) mas nunca comprou. */
+async function alternarLead(id,botao){
+  const c=clientes.find(x=>x.id===id);
+  if(!c)return;
+  const novo=!c.lead;
+  c.lead=novo;
+  if(botao){ botao.classList.toggle('on',novo); botao.disabled=true; }
+  try{
+    await db.collection('clientes').doc(id).update({lead:novo,atualizado:new Date().toISOString()});
+    renderCards();
+    atualizarStats();
+  }catch(e){
+    c.lead=!novo;
+    if(botao){ botao.classList.toggle('on',!novo); }
+    alert('Não consegui salvar agora. Confira a internet e tente de novo.');
+    console.error(e);
+  }
+  if(botao)botao.disabled=false;
 }
 
 // ── ALERTAS ───────────────────────────────────────────
@@ -1498,15 +1767,7 @@ async function renderDatasQuentes(){
     return{nome,data:dataSalva,icon:'🎉',key:nome,custom:true};
   }));
 
-  const todasDatas=[
-    {nome:'Dia das Mulheres',data:`${ano}-03-08`,icon:'👩',key:'dia-das-mulheres'},
-    {nome:'Páscoa',data:calcPascoa(ano),icon:'🐣',key:'pascoa'},
-    {nome:'Dia das Mães',data:primeiroDomingo(ano,5,2),icon:'💐',key:'dia-das-maes'},
-    {nome:'Dia dos Namorados',data:`${ano}-06-12`,icon:'❤️',key:'dia-dos-namorados'},
-    {nome:'Dia dos Pais',data:primeiroDomingo(ano,8,2),icon:'👨',key:'dia-dos-pais'},
-    {nome:'Natal',data:`${ano}-12-25`,icon:'🎄',key:'natal'},
-    ...datasCustom,
-  ];
+  const todasDatas=[...datasComemorativas(ano),...datasCustom];
 
   const proximas=todasDatas.map(d=>{
     if(!d.data)return null; // ocasião personalizada sem data configurada
@@ -1515,11 +1776,9 @@ async function renderDatasQuentes(){
     const anoOriginal=dt.getFullYear();
     // Se já passou, move para o próximo ano
     if(dt<hoje){
-      // Para datas fixas (Páscoa, Mães, Pais), recalcula para o próximo ano
-      if(d.key==='pascoa') dt=new Date(calcPascoa(ano+1)+'T12:00');
-      else if(d.key==='dia-das-maes') dt=new Date(primeiroDomingo(ano+1,5,2)+'T12:00');
-      else if(d.key==='dia-dos-pais') dt=new Date(primeiroDomingo(ano+1,8,2)+'T12:00');
-      else dt=new Date(`${ano+1}-${d.data.slice(5)}T12:00`);
+      // Páscoa, Mães, Pais e Black Friday mudam de dia: recalcula no ano que vem
+      const noProximoAno=datasComemorativas(ano+1).find(x=>x.key===d.key);
+      dt=new Date((noProximoAno?noProximoAno.data:`${ano+1}-${d.data.slice(5)}`)+'T12:00');
     }
     const dias=Math.round((dt-hoje)/(1000*60*60*24));
     const dataFormatada=dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'long'});
@@ -1605,6 +1864,16 @@ async function verDetalhe(id){
   }
 }
 
+/* Quem trouxe quem. Antes os dois lados diziam quase a mesma coisa,
+   e dava a impressão de duas indicações quando era só uma, ida e volta. */
+function textoLaco(v){
+  if(v.tipo!=='indicacao')return v.detalhe||'';
+  const d=(v.detalhe||'').toLowerCase();
+  if(d.includes('indicou este'))return 'trouxe esta cliente';
+  if(d.includes('indicado por')||d.includes('foi indicado'))return 'foi trazida por esta cliente';
+  return v.detalhe||'';
+}
+
 function renderDetalhe(c,peds,vinculos){
   const wNum=c.whats?.replace(/\D/g,'');
   const wNum2=c.whats2?.replace(/\D/g,'');
@@ -1655,7 +1924,8 @@ function renderDetalhe(c,peds,vinculos){
   </div>`;
 
   if(c.indicadoPorNome)html+=`<div class="det-full"><div class="lbl">Indicado por</div><div class="val">🌟 ${c.indicadoPorNome}</div></div>`;
-  if(c.totalIndicacoes>0)html+=`<div class="det-full"><div class="lbl">Indicações feitas</div><div class="val">🌟 Indicou ${c.totalIndicacoes} cliente${c.totalIndicacoes!==1?'s':''}</div></div>`;
+  const trouxe=clientes.filter(x=>x.indicadoPorId===c.id);
+  if(trouxe.length)html+=`<div class="det-full"><div class="lbl">Indicações feitas</div><div class="val">🌟 Trouxe ${trouxe.length} cliente${trouxe.length!==1?'s':''}: ${trouxe.map(x=>x.nome).join(', ')}</div></div>`;
   const end=[c.endereco,c.bairro].filter(Boolean).join(' · ');
   if(end)html+=`<div class="det-full"><div class="lbl">Endereço</div><div class="val">${end}</div></div>`;
   if(c.instagram)html+=`<div class="det-full"><div class="lbl">Instagram</div><div class="val">${c.instagram}</div></div>`;
@@ -1665,8 +1935,30 @@ function renderDetalhe(c,peds,vinculos){
   html+=`<div class="det-actions"><button class="btn-edit" onclick="fechar('modal-detalhe');abrirFormCliente(${JSON.stringify(c).replace(/"/g,'&quot;')})">✏️ Editar</button><button class="btn-del" onclick="excluirCliente('${c.id}')">🗑</button></div>`;
 
   // VÍNCULOS
-  html+=`<div style="margin-top:1.25rem"><div class="section-title">🔗 Vínculos (${vinculos.length})</div>`;
-  html+=vinculos.length?vinculos.map(v=>`<div class="vinculo-card"><div class="vinculo-avatar" style="background:${avatarCor(v.nomeVinculado)}">${iniciais(v.nomeVinculado)}</div><div class="vinculo-info"><div class="vinculo-nome">${v.nomeVinculado}</div><div class="vinculo-tipo">${vinculoLabel(v.tipo)}${v.detalhe?' · '+v.detalhe:''}</div></div><div style="display:flex;gap:.4rem"><button class="btn-sm" onclick="fechar('modal-detalhe');setTimeout(()=>verDetalhe('${v.idVinculado}'),100)">Ver</button><button class="btn-sm btn-sm-del" onclick="removerVinculo('${c.id}','${v.id}','${v.idVinculado}')">×</button></div></div>`).join(''):`<p style="font-size:13px;color:var(--muted);padding:.5rem 0">Nenhum vínculo.</p>`;
+  /* A mesma pessoa pode ser parente E quem indicou. Aqui ela aparece
+     uma vez só, com os dois laços na mesma linha. A contagem é de pessoas. */
+  const vincPorPessoa = {};
+  vinculos.forEach(v => {
+    const k = v.idVinculado || ('nome:' + (v.nomeVinculado || ''));
+    if (!vincPorPessoa[k]) vincPorPessoa[k] = { nome: v.nomeVinculado, idVinculado: v.idVinculado, lacos: [] };
+    vincPorPessoa[k].lacos.push(v);
+  });
+  const pessoasVinculadas = Object.values(vincPorPessoa);
+  html += `<div style="margin-top:1.25rem"><div class="section-title">🔗 Vínculos (${pessoasVinculadas.length})</div>`;
+  html += pessoasVinculadas.length ? pessoasVinculadas.map(pv => `
+    <div class="vinculo-card">
+      <div class="vinculo-avatar" style="background:${avatarCor(pv.nome)}">${iniciais(pv.nome)}</div>
+      <div class="vinculo-info">
+        <div class="vinculo-nome">${pv.nome}</div>
+        ${pv.lacos.map(v => `<div class="vinculo-tipo">${vinculoLabel(v.tipo)}${textoLaco(v) ? ' · ' + textoLaco(v) : ''}
+          ${pv.lacos.length > 1 ? `<button class="btn-sm btn-sm-del" style="padding:0 .3rem;font-size:10px;margin-left:.25rem"
+            title="Remover só este laço" onclick="removerVinculo('${c.id}','${v.id}','${v.idVinculado}')">×</button>` : ''}</div>`).join('')}
+      </div>
+      <div style="display:flex;gap:.4rem">
+        <button class="btn-sm" onclick="fechar('modal-detalhe');setTimeout(()=>verDetalhe('${pv.idVinculado}'),100)">Ver</button>
+        ${pv.lacos.length === 1 ? `<button class="btn-sm btn-sm-del" onclick="removerVinculo('${c.id}','${pv.lacos[0].id}','${pv.lacos[0].idVinculado}')">×</button>` : ''}
+      </div>
+    </div>`).join('') : `<p style="font-size:13px;color:var(--muted);padding:.5rem 0">Nenhum vínculo ainda.</p>`;
   html+=`<button class="btn-add-vinculo" onclick="abrirModalVinculo('${c.id}')">+ Adicionar vínculo</button></div>`;
 
   // RECEBIMENTOS
@@ -1698,10 +1990,19 @@ function renderDetalhe(c,peds,vinculos){
         <div class="pedido-head"><div class="pedido-produto">${isCan?'<s>':''}${p.produto||'Produto'}${isCan?'</s>':''}</div>
         <div style="text-align:right"><div class="pedido-valor" style="${isCan?'text-decoration:line-through;color:var(--muted)':''}">${fmt(total)}</div>
         <span class="pedido-status status-${p.status||'finalizado-ok'}">${{'finalizado-ok':'✅ Ok','finalizado-problema':'⚠️ Problema','cancelado':'❌ Cancelado'}[p.status]||'Ok'}</span></div></div>
-        ${p.status==='finalizado-problema'&&(p.problemaTipo||p.problemaObs)?`<div style="font-size:12px;color:#a02020;background:#fde8e8;border-radius:8px;padding:.45rem .6rem;margin-top:.4rem">${p.problemaTipo?`<strong>${p.problemaTipo}</strong>`:''}${p.problemaTipo&&p.problemaObs?' · ':''}${p.problemaObs||''}</div>`:''}
+        ${p.status==='finalizado-problema'&&(p.problemaTipo||p.problemaObs||p.problemaSolucao)?`<div style="font-size:12px;color:#a02020;background:#fde8e8;border-radius:8px;padding:.45rem .6rem;margin-top:.4rem">
+          ${p.problemaTipo?`<strong>${p.problemaTipo}</strong>`:''}${p.problemaTipo&&p.problemaObs?' · ':''}${p.problemaObs||''}
+          ${p.problemaSolucao||p.problemaSolucaoObs?`<div style="margin-top:.25rem;color:#1a6a3a">🛠️ ${p.problemaSolucao||''}${p.problemaSolucao&&p.problemaSolucaoObs?' · ':''}${p.problemaSolucaoObs||''}</div>`:''}
+          ${p.problemaResolvido?`<div style="margin-top:.15rem;font-weight:600;color:${p.problemaResolvido==='sim'?'#1a6a3a':p.problemaResolvido==='parcial'?'#8a6a1e':'#a02020'}">${p.problemaResolvido==='sim'?'✅ Resolvido':p.problemaResolvido==='parcial'?'🟡 Resolvido em parte':'❌ Ainda em aberto'}</div>`:''}
+        </div>`:''}
         ${p.itens?.length>1?`<div style="margin:.35rem 0;padding:.4rem .6rem;background:var(--branco);border-radius:6px;font-size:12px">${p.itens.map(it=>`<div style="display:flex;justify-content:space-between;padding:.15rem 0;border-bottom:1px solid var(--borda)"><span>${it.produto}</span><span style="color:var(--verde);font-weight:500">${fmt(it.valor)}</span></div>`).join('')}</div>`:''}
         ${isCan&&p.valorRetido>0?`<div style="font-size:12px;color:var(--danger);font-weight:500;margin-bottom:.3rem">💰 Retido: ${fmt(p.valorRetido)}</div>`:''}
-        ${p.foto?`<img src="${p.foto}" onclick="abrirFotoGrande(this.src)" title="Toque para ampliar" style="float:right;width:54px;height:54px;object-fit:cover;border-radius:8px;margin:0 0 .35rem .5rem;cursor:zoom-in;border:1px solid var(--borda)">`:''}
+        ${(()=>{const fs=fotosDoPedido(p);if(!fs.length)return '';
+          fotosNaTela[p.id]=fs;
+          const tam=fs.length>2?46:54;
+          return `<div style="float:right;display:flex;gap:.25rem;margin:0 0 .35rem .5rem" title="Toque para ampliar">
+            ${fs.map((f,i)=>`<img src="${f}" onclick="event.stopPropagation();abrirFotosDoPedido('${p.id}',${i})" style="width:${tam}px;height:${tam}px;object-fit:cover;border-radius:8px;cursor:zoom-in;border:1px solid var(--borda);display:block">`).join('')}
+          </div>`;})()}
         <div class="pedido-meta">
           ${p.dataConfirmacao?`<span>📋 ${exibeData(p.dataConfirmacao)}</span>`:''}
           ${p.data?`<span>🚚 ${exibeData(p.data)}</span>`:''}
@@ -1775,8 +2076,9 @@ function salvarCliente(){
           await db.collection('clientes').doc(novoId).collection('vinculos').add(vinA);
           await db.collection('clientes').doc(indicadoPorId).collection('vinculos').add(vinB);
           // Atualiza contador de indicações
-          const indSnap=await db.collection('clientes').doc(indicadoPorId).collection('vinculos').where('tipo','==','indicacao').get();
-          await db.collection('clientes').doc(indicadoPorId).update({totalIndicacoes:indSnap.size});
+          // conta só quem realmente foi trazido por esta pessoa
+          const quantos=clientes.filter(x=>x.indicadoPorId===indicadoPorId).length+1;
+          await db.collection('clientes').doc(indicadoPorId).update({totalIndicacoes:quantos});
         }
       }
     }
@@ -1795,6 +2097,8 @@ let catalogo=[];
    A precificacao ja calcula materiais + mao de obra + rateio = custo_total.
    Aqui a gente so le esse numero e usa no relatorio. */
 let custosPrecificacao={};   // nome normalizado -> {nome, custo}
+let custosPorCodigo={};      // código do catálogo -> {nome, custo}  (ligação que não quebra ao renomear)
+let codPorNomeCat={};        // nome (produto ou variação, igual à Comanda) -> código do catálogo
 let custosPrecLista=[];      // mesma coisa em lista, do nome mais longo pro mais curto
 let custosPrecStatus='';
 
@@ -1811,23 +2115,50 @@ function normProd(t){
 async function carregarCustosPrecificacao(){
   const H={'apikey':CAT_KEY,'Authorization':'Bearer '+CAT_KEY};
   try{
-    const res=await fetch(CAT_URL+'/rest/v1/produtos?select=nome,custo_total,ativo&limit=500',{headers:H});
+    const res=await fetch(CAT_URL+'/rest/v1/produtos?select=nome,codigo,custo_total,ativo&limit=500',{headers:H});
     if(!res.ok)throw new Error('http '+res.status);
     const dados=await res.json();
-    const mapa={};
+    const mapa={}, porCod={};
     (dados||[]).forEach(pr=>{
       const custo=parseFloat(pr.custo_total)||0;
+      if(custo>0&&pr.codigo){
+        const k=String(pr.codigo).trim().toUpperCase();
+        if(!porCod[k]||pr.ativo===true)porCod[k]={nome:pr.nome,custo:custo};
+      }
       if(!pr.nome||custo<=0)return;
       const n=normProd(pr.nome); if(!n)return;
       if(!mapa[n]||pr.ativo===true)mapa[n]={nome:pr.nome,custo:custo};
     });
     custosPrecificacao=mapa;
+    custosPorCodigo=porCod;
+    // nomes do catálogo, incluindo variações ("nome - diferença", como a Comanda escreve)
+    try{
+      const rc=await fetch(CAT_URL+'/rest/v1/catalogo?select=cod,nome,preco,medias&limit=500',{headers:H});
+      if(rc.ok){
+        const cat=await rc.json(), mp={};
+        (cat||[]).forEach(c=>{
+          if(c.cod&&c.nome)mp[normProd(c.nome)]=c.cod;
+          (c.medias||[]).forEach(m=>{
+            if(!m||!m.cod||m.tipo==='ref')return;
+            const nm=(m.nome||c.nome||'')+(m.diferenca?' - '+m.diferenca:'');
+            // variação com o mesmo preço usa o custo do principal
+            const pv=(m.preco!=null&&m.preco!=='')?parseFloat(m.preco):NaN;
+            const mesmo=isNaN(pv)||Math.abs(pv-(parseFloat(c.preco)||0))<0.01;
+            const k=normProd(nm); if(k&&!mp[k])mp[k]=mesmo?(c.cod||m.cod):m.cod;
+          });
+        });
+        codPorNomeCat=mp;
+        try{localStorage.setItem('cat_cod_nome',JSON.stringify(mp));}catch(e){}
+      }
+    }catch(e){}
     montarListaPrec();
     custosPrecStatus=custosPrecLista.length+' produto'+(custosPrecLista.length!==1?'s':'')+' com custo na precifica\u00e7\u00e3o';
-    try{localStorage.setItem('custos_prec',JSON.stringify(mapa));}catch(e){}
+    try{localStorage.setItem('custos_prec',JSON.stringify(mapa));localStorage.setItem('custos_prec_cod',JSON.stringify(porCod));}catch(e){}
   }catch(e){
     try{
       const c=localStorage.getItem('custos_prec');
+      const cc=localStorage.getItem('custos_prec_cod');if(cc)custosPorCodigo=JSON.parse(cc);
+      const cn=localStorage.getItem('cat_cod_nome');if(cn)codPorNomeCat=JSON.parse(cn);
       if(c){custosPrecificacao=JSON.parse(c);montarListaPrec();custosPrecStatus='sem internet \u2014 usando a \u00faltima c\u00f3pia salva';}
     }catch(e2){}
     if(!custosPrecStatus)custosPrecStatus='n\u00e3o consegui ler a precifica\u00e7\u00e3o agora';
@@ -1839,11 +2170,19 @@ function montarListaPrec(){
     .sort((a,b)=>b.n.length-a.n.length);
 }
 
-// Ordem: 1) custo digitado a mao (voce mandou, voce manda) 2) custo da precificacao
+// Ordem: 1) custo digitado a mao (voce mandou, voce manda)
+//        2) pelo CODIGO do catalogo (nao quebra se renomear) 3) pelo nome
 function custoInfo(nome){
   const manual=Number(custosProdutos[nome])||0;
   if(manual>0)return{custo:manual,auto:false,de:''};
   const n=normProd(nome);
+  if(n){
+    // o pedido pode vir marcado "(esgotado)"/"(oculto)" pela Comanda
+    const n2=normProd(String(nome||'').replace(/\s*\((esgotado|oculto)\)\s*$/i,''));
+    const cod=codPorNomeCat[n2]||codPorNomeCat[n];
+    const k=cod?String(cod).trim().toUpperCase():'';
+    if(k&&custosPorCodigo[k])return{custo:custosPorCodigo[k].custo,auto:true,de:custosPorCodigo[k].nome+' ('+cod+')'};
+  }
   if(n&&custosPrecificacao[n])return{custo:custosPrecificacao[n].custo,auto:true,de:custosPrecificacao[n].nome};
   if(n){
     const m=custosPrecLista.find(x=>x.n.length>=5&&n.indexOf(x.n)!==-1);
@@ -2002,6 +2341,15 @@ function calcTotalItens(){
   const total = Array.from(document.querySelectorAll('.item-valor')).reduce((s,el)=>s+(parseFloat(el.value)||0),0);
   const label = document.getElementById('fp-total-label');
   if(label) label.textContent = 'R$ '+total.toFixed(2).replace('.',',');
+  // total com o frete, só para conferir na hora de cobrar
+  const frete = parseFloat(document.getElementById('fp-entrega')?.value)||0;
+  const geral = document.getElementById('fp-total-geral');
+  if(geral){
+    geral.textContent = 'R$ '+(total+frete).toFixed(2).replace('.',',');
+    const dono = geral.parentElement;
+    const span = dono.querySelector('span');
+    span.textContent = frete>0 ? `Total com entrega (frete R$ ${frete.toFixed(2).replace('.',',')})` : 'Total com entrega';
+  }
 }
 
 
@@ -2037,10 +2385,11 @@ function abrirFormPedido(cliId,pedido=null){
   const itens = pedido?.itens?.length ? pedido.itens : (pedido?.produto ? [{produto: pedido.produto, valor: pedido?.valor||0}] : [{produto:'',valor:''}]);
   renderItensPedido(itens);
   document.getElementById('fp-entrega').value=pedido?.entrega||'';
+  calcTotalItens();
   document.getElementById('fp-retido').value=pedido?.valorRetido||'';
   document.getElementById('fp-data-conf').value=pedido?.dataConfirmacao||'';
   document.getElementById('fp-data').value=pedido?.data||'';
-  document.getElementById('fp-foto').value=pedido?.foto||'';
+  fotosPedido=fotosDoPedido(pedido).slice(0,MAX_FOTOS);
   renderPreviewFoto();
   // Ao editar um pedido que já tem entrega, ela não acompanha mais a confirmação
   document.getElementById('fp-data').dataset.auto=pedido?.data?'':'1';
@@ -2064,6 +2413,9 @@ function abrirFormPedido(cliId,pedido=null){
   selSt.value=stValido;
   preencherSelectProblema(pedido?.problemaTipo||'');
   document.getElementById('fp-problema-obs').value=pedido?.problemaObs||'';
+  document.getElementById('fp-problema-solucao-tipo').value=pedido?.problemaSolucao||'';
+  document.getElementById('fp-problema-solucao-obs').value=pedido?.problemaSolucaoObs||'';
+  document.getElementById('fp-problema-resolvido').value=pedido?.problemaResolvido||'';
   toggleCancelado(stValido);
   toggleAniversario(pedido?.ocasiao||'');
   atualizarSelectOcasiao();
@@ -2142,7 +2494,7 @@ async function salvarPedido(){
     }
   }
 
-  const dados={produto,valor,itens,entrega:parseFloat(document.getElementById('fp-entrega')?.value)||0,data:document.getElementById('fp-data')?.value||'',dataConfirmacao:document.getElementById('fp-data-conf')?.value||'',status,valorRetido:status==='cancelado'?(parseFloat(document.getElementById('fp-retido')?.value)||0):0,problemaTipo:status==='finalizado-problema'?(document.getElementById('fp-problema-tipo')?.value==='__outro'?'Outro':(document.getElementById('fp-problema-tipo')?.value||'')):'',problemaObs:status==='finalizado-problema'?(document.getElementById('fp-problema-obs')?.value.trim()||''):'',ocasiao:document.getElementById('fp-ocasiao')?.value||'',anivNome:document.getElementById('fp-ocasiao')?.value==='aniversario'?capitalizarNome(document.getElementById('fp-aniv-nome')?.value.trim()||''):'',anivId:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-id')?.value||''):'',anivData:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-data')?.value||''):'',remetente:capitalizarNome(document.getElementById('fp-remetente')?.value.trim()||''),destNome:capitalizarNome(document.getElementById('fp-dest-nome')?.value.trim()||''),destId,destTel:document.getElementById('fp-dest-tel')?.value?.trim()||'',destLogradouro:destLogr,destNumero:destNum,destComplemento:destComp,destBairro,destEnd:[destLogr,destNum,destComp].filter(Boolean).join(', '),obs:document.getElementById('fp-obs')?.value.trim()||'',foto:document.getElementById('fp-foto')?.value||'',atualizado:new Date().toISOString()};
+  const dados={produto,valor,itens,entrega:parseFloat(document.getElementById('fp-entrega')?.value)||0,data:document.getElementById('fp-data')?.value||'',dataConfirmacao:document.getElementById('fp-data-conf')?.value||'',status,valorRetido:status==='cancelado'?(parseFloat(document.getElementById('fp-retido')?.value)||0):0,problemaTipo:status==='finalizado-problema'?(document.getElementById('fp-problema-tipo')?.value==='__outro'?'Outro':(document.getElementById('fp-problema-tipo')?.value||'')):'',problemaObs:status==='finalizado-problema'?(document.getElementById('fp-problema-obs')?.value.trim()||''):'',problemaSolucao:status==='finalizado-problema'?(document.getElementById('fp-problema-solucao-tipo')?.value||''):'',problemaSolucaoObs:status==='finalizado-problema'?(document.getElementById('fp-problema-solucao-obs')?.value.trim()||''):'',problemaResolvido:status==='finalizado-problema'?(document.getElementById('fp-problema-resolvido')?.value||''):'',ocasiao:document.getElementById('fp-ocasiao')?.value||'',anivNome:document.getElementById('fp-ocasiao')?.value==='aniversario'?capitalizarNome(document.getElementById('fp-aniv-nome')?.value.trim()||''):'',anivId:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-id')?.value||''):'',anivData:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-data')?.value||''):'',remetente:capitalizarNome(document.getElementById('fp-remetente')?.value.trim()||''),destNome:capitalizarNome(document.getElementById('fp-dest-nome')?.value.trim()||''),destId,destTel:document.getElementById('fp-dest-tel')?.value?.trim()||'',destLogradouro:destLogr,destNumero:destNum,destComplemento:destComp,destBairro,destEnd:[destLogr,destNum,destComp].filter(Boolean).join(', '),obs:document.getElementById('fp-obs')?.value.trim()||'',foto:fotosPedido[0]||'',fotos:fotosPedido.slice(),atualizado:new Date().toISOString()};
   itens.forEach(it=>{if(it.produto)autoSalvarCadastro('produto',it.produto);});
   if(status==='finalizado-problema'){
     const _pt=document.getElementById('fp-problema-tipo')?.value||'';
@@ -2295,8 +2647,11 @@ async function salvarVinculo(){
   const detalhe=document.getElementById('fv-detalhe').value.trim();
   if(!vinculoDestino){alert('Selecione um cliente.');return;}
   const c=clientes.find(x=>x.id===cliId);
-  const vinA={idVinculado:vinculoDestino.id,nomeVinculado:vinculoDestino.nome,tipo,detalhe,criado:new Date().toISOString()};
-  const vinB={idVinculado:cliId,nomeVinculado:c?.nome||'',tipo,detalhe,criado:new Date().toISOString()};
+  // na indicação, cada lado guarda o seu papel: quem trouxe e quem foi trazido
+  const detA=tipo==='indicacao'?'Indicou este cliente':detalhe;
+  const detB=tipo==='indicacao'?'Indicado por':detalhe;
+  const vinA={idVinculado:vinculoDestino.id,nomeVinculado:vinculoDestino.nome,tipo,detalhe:detA,criado:new Date().toISOString()};
+  const vinB={idVinculado:cliId,nomeVinculado:c?.nome||'',tipo,detalhe:detB,criado:new Date().toISOString()};
   await db.collection('clientes').doc(cliId).collection('vinculos').add(vinA);
   await db.collection('clientes').doc(vinculoDestino.id).collection('vinculos').add(vinB);
 
@@ -2316,10 +2671,10 @@ async function salvarVinculo(){
         indicadoPorId:vinculoDestino.id,
         indicadoPorNome:vinculoDestino.nome
       });
-      const indSnap=await db.collection('clientes').doc(vinculoDestino.id)
-        .collection('vinculos').where('tipo','==','indicacao').get();
+      const quantos=clientes.filter(x=>x.indicadoPorId===vinculoDestino.id).length
+        +(c&&c.indicadoPorId===vinculoDestino.id?0:1);
       await db.collection('clientes').doc(vinculoDestino.id)
-        .update({totalIndicacoes:indSnap.size});
+        .update({totalIndicacoes:quantos});
     }
   }
 
@@ -2444,8 +2799,459 @@ async function renderRelatorio(){
     return`<div class="rel-produto-row"><div class="rel-produto-head"><div><div class="rel-produto-nome">🌸 ${p.nome}</div><div class="rel-produto-qtd">${p.qtd}x${p.frete>0?' · frete '+fmt(p.frete):''}</div></div>${custo===0?`<button class="btn-edit-custo" onclick="abrirCusto('${p.nome.replace(/'/g,"\\'")}')">+ custo</button>`:''}</div><div class="rel-produto-valores"><div class="rel-val-item"><div class="rvl">Receita</div><div class="rvv">${fmt(p.receita)}</div></div><div class="rel-val-item"><div class="rvl">Custo total</div><div class="rvv">${custo>0?fmt(custTotal):'—'}</div></div><div class="rel-val-item ${lucro!==null?'lucro-ok':'lucro-sem'}"><div class="rvl">Lucro${margem!==null?' ('+margem+'%)':''}</div><div class="rvv">${lucro!==null?fmt(lucro):'cadastre o custo'}</div></div></div></div>`;
   }).join('');
   if(temCusto)html+=`<div style="background:var(--verde-bg);border:1px solid var(--verde-claro);border-radius:10px;padding:.85rem;margin-top:.5rem"><div style="font-size:12px;color:var(--cinza);margin-bottom:.3rem">TOTAL DO MÊS</div><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem"><span><small style="color:var(--cinza)">Receita: </small><strong>${fmt(totalReceita)}</strong></span><span><small style="color:var(--cinza)">Custo: </small><strong>${fmt(totalCusto)}</strong></span><span><small style="color:var(--cinza)">Lucro: </small><strong style="color:#2a7a2a;font-size:15px">${fmt(lucroTotal)}</strong></span></div></div>`;
+  html+=blocoClientesDoMes(mes,todosPedidos);
   html+=blocoProblemas(mes);
   document.getElementById('rel-conteudo').innerHTML=html;
+}
+
+/* Quem comprou no mes, do que mais gastou pro que menos.
+   Cada linha abre a ficha do cliente. */
+function blocoClientesDoMes(mes,pedidosDoMes){
+  const porCliente={};
+  Object.entries(pedidosPorCliente).forEach(([cliId,peds])=>{
+    peds.forEach(p=>{
+      if(!pedidosDoMes.includes(p))return;
+      if(!porCliente[cliId]){
+        const cli=clientes.find(x=>x.id===cliId);
+        porCliente[cliId]={id:cliId,nome:cli?.nome||'Cliente removido',whats:cli?.whats||'',qtd:0,valor:0,produtos:[]};
+      }
+      porCliente[cliId].qtd++;
+      porCliente[cliId].valor+=Number(p.valor)||0;
+      if(p.produto)porCliente[cliId].produtos.push(p.produto);
+    });
+  });
+  const lista=Object.values(porCliente).sort((a,b)=>b.valor-a.valor);
+  if(!lista.length)return '';
+  const repetidos=lista.filter(c=>c.qtd>1).length;
+  return `<div style="background:var(--creme2);border:1px solid var(--borda);border-radius:10px;padding:.85rem;margin-top:.9rem">
+    <div style="font-size:13px;font-weight:600;color:var(--cinza);margin-bottom:.15rem">👥 ${lista.length} cliente${lista.length!==1?'s':''} em ${formataMes(mes)}</div>
+    <div style="font-size:11.5px;color:var(--muted);margin-bottom:.6rem">${repetidos?repetidos+' comprou mais de uma vez · ':''}toque no nome para abrir a ficha</div>
+    ${lista.map(c=>`
+      <div class="data-quente-card" onclick="verDetalhe('${c.id}')" style="cursor:pointer">
+        <div class="dq-icon">${c.qtd>1?'⭐':'🌸'}</div>
+        <div class="dq-info">
+          <div class="dq-nome">${c.nome}</div>
+          <div class="dq-sub">${c.qtd} pedido${c.qtd!==1?'s':''} · ${c.produtos.slice(0,2).join(', ')}${c.produtos.length>2?' +'+(c.produtos.length-2):''}</div>
+        </div>
+        <div class="dq-data"><strong>${fmt(c.valor)}</strong></div>
+      </div>`).join('')}
+  </div>`;
+}
+
+/* =====================================================================
+   OPORTUNIDADES — lê os pedidos que já existem e transforma em ação.
+   Nada aqui inventa dado: tudo sai de clientes + pedidos finalizados.
+===================================================================== */
+const OP_HOJE = () => new Date(new Date().toISOString().slice(0,10)+'T12:00');
+
+function opVendas(){
+  const out=[];
+  Object.entries(pedidosPorCliente).forEach(([cliId,peds])=>{
+    (peds||[]).forEach(p=>{
+      if(!p.data)return;
+      if(p.status!=='finalizado-ok'&&p.status!=='finalizado-problema')return;
+      if(!((Number(p.valor)||0)>0))return;
+      if(p.produto?.startsWith('🎁 Resgate'))return;
+      out.push({...p,cliId});
+    });
+  });
+  return out.sort((a,b)=>(a.data||'').localeCompare(b.data||''));
+}
+function opDias(iso){ return Math.round((OP_HOJE()-new Date(iso+'T12:00'))/86400000); }
+function opZap(tel,texto){
+  const n=String(tel||'').replace(/\D/g,'');
+  if(!n)return '';
+  return `<a class="op-zap" target="_blank" href="https://wa.me/55${n}?text=${encodeURIComponent(texto)}">💬 Chamar</a>`;
+}
+function opCard(titulo,sub,corpo,dica){
+  return `<div class="op-card">
+    <div class="op-titulo">${titulo}</div>
+    ${sub?`<div class="op-sub">${sub}</div>`:''}
+    ${corpo}
+    ${dica?`<div class="op-dica">💡 ${dica}</div>`:''}
+  </div>`;
+}
+function opVazio(txt){ return `<div class="op-vazio">${txt}</div>`; }
+
+/* 1. RADAR DE RECOMPRA
+   Cada cliente tem o próprio ritmo. Com 2 ou mais compras dá pra saber o
+   intervalo médio dela e avisar quando está na hora de chamar de novo. */
+function opRecompra(vendas){
+  const porCli={};
+  vendas.forEach(v=>{ (porCli[v.cliId]=porCli[v.cliId]||[]).push(v); });
+  const linhas=[];
+  Object.entries(porCli).forEach(([cliId,peds])=>{
+    if(peds.length<2)return;
+    const datas=[...new Set(peds.map(p=>p.data))].sort();
+    if(datas.length<2)return;
+    let soma=0;
+    for(let i=1;i<datas.length;i++) soma+=Math.round((new Date(datas[i]+'T12:00')-new Date(datas[i-1]+'T12:00'))/86400000);
+    const media=Math.round(soma/(datas.length-1));
+    if(media<=0)return;
+    const desde=opDias(datas[datas.length-1]);
+    const ticket=peds.reduce((s,p)=>s+(Number(p.valor)||0),0)/peds.length;
+    const cli=clientes.find(c=>c.id===cliId);
+    const atraso=desde/media;
+    if(atraso<0.75)return;                        // ainda cedo
+    linhas.push({cliId,nome:cli?.nome||'—',whats:cli?.whats||'',media,desde,ticket,
+      compras:datas.length,atraso,
+      ultimo:peds[peds.length-1].produto||'',
+      estado: atraso>2.5?'sumiu' : atraso>1.4?'atrasado' : 'no ponto'});
+  });
+  linhas.sort((a,b)=>(b.ticket*Math.min(b.atraso,3))-(a.ticket*Math.min(a.atraso,3)));
+  const corpo=linhas.length?linhas.slice(0,25).map(l=>{
+    const cor=l.estado==='no ponto'?'var(--verde)':l.estado==='atrasado'?'#c98a00':'#b04a4a';
+    const msg=`Oi ${l.nome.split(' ')[0]}! Tudo bem? Chegaram novidades lindas aqui na Confeitos da Manu 🌿 Lembrei de você — quer ver as opções?`;
+    return `<div class="op-linha">
+      <div class="op-linha-info" onclick="verDetalhe('${l.cliId}')">
+        <div class="op-nome">${l.nome} <span class="op-tag" style="background:${cor}">${l.estado}</span></div>
+        <div class="op-meta">compra a cada ~${l.media} dias · última há ${l.desde} dias · ${l.compras} compras · ticket ${fmt(l.ticket)}${l.ultimo?' · último: '+l.ultimo:''}</div>
+      </div>${opZap(l.whats,msg)}</div>`;
+  }).join(''):opVazio('Ainda não há clientes com duas compras para calcular o ritmo.');
+  const potencial=linhas.reduce((s,l)=>s+l.ticket,0);
+  return opCard('🔁 Radar de recompra',
+    linhas.length?`${linhas.length} clientes no ponto de comprar de novo · potencial de ${fmt(potencial)}`:'',
+    corpo,
+    'Chame primeiro quem está "no ponto": a chance de fechar é maior do que com quem já sumiu.');
+}
+
+/* 2. SEGMENTOS (RFM simplificado): quanto tempo faz, quantas vezes, quanto gasta */
+function opSegmentos(vendas){
+  const porCli={};
+  vendas.forEach(v=>{ (porCli[v.cliId]=porCli[v.cliId]||[]).push(v); });
+  const segs={campea:[],fiel:[],nova:[],risco:[],perdida:[]};
+  Object.entries(porCli).forEach(([cliId,peds])=>{
+    const cli=clientes.find(c=>c.id===cliId);
+    const total=peds.reduce((s,p)=>s+(Number(p.valor)||0),0);
+    const desde=opDias(peds[peds.length-1].data);
+    const n=peds.length;
+    const item={cliId,nome:cli?.nome||'—',whats:cli?.whats||'',total,n,desde};
+    if(desde>180) segs.perdida.push(item);
+    else if(n>=3&&desde<=60) segs.campea.push(item);
+    else if(n>=2&&desde<=120) segs.fiel.push(item);
+    else if(n===1&&desde<=60) segs.nova.push(item);
+    else segs.risco.push(item);
+  });
+  const defs=[
+    {k:'campea',nome:'⭐ Campeãs',cor:'#2a7a2a',o:'compram sempre e há pouco tempo',acao:'lançamento em primeira mão e brinde surpresa'},
+    {k:'fiel',nome:'💚 Fiéis',cor:'#3a8a5a',o:'já voltaram pelo menos uma vez',acao:'convite pra data comemorativa'},
+    {k:'nova',nome:'🌱 Primeira compra',cor:'#8a7a3a',o:'compraram uma vez, recente',acao:'pedir foto/depoimento e oferecer a segunda compra com mimo'},
+    {k:'risco',nome:'⚠️ Em risco',cor:'#c98a00',o:'já foram boas, estão esfriando',acao:'mensagem pessoal, não promoção genérica'},
+    {k:'perdida',nome:'😴 Sumidas',cor:'#b04a4a',o:'mais de 6 meses sem comprar',acao:'campanha de reativação com oferta clara'},
+  ];
+  const corpo=`<div class="op-segs">${defs.map(d=>{
+    const l=segs[d.k].sort((a,b)=>b.total-a.total);
+    const soma=l.reduce((s,x)=>s+x.total,0);
+    return `<div class="op-seg" onclick="opAbrirSeg('${d.k}')">
+      <div class="op-seg-num" style="color:${d.cor}">${l.length}</div>
+      <div class="op-seg-nome">${d.nome}</div>
+      <div class="op-seg-val">${fmt(soma)}</div>
+    </div>`;
+  }).join('')}</div>
+  <div id="op-seg-lista"></div>`;
+  window.opSegsCache={segs,defs};
+  return opCard('🎯 Seus clientes em 5 grupos','toque num grupo para ver quem está nele',corpo,
+    'Cada grupo pede uma conversa diferente. Falar igual com todos é o que faz a mensagem ser ignorada.');
+}
+function opAbrirSeg(k){
+  const {segs,defs}=window.opSegsCache||{};
+  if(!segs)return;
+  const d=defs.find(x=>x.k===k);
+  const l=segs[k].sort((a,b)=>b.total-a.total);
+  document.getElementById('op-seg-lista').innerHTML=`
+    <div class="op-seg-box">
+      <div class="op-seg-head">${d.nome} — ${d.o}</div>
+      <div class="op-dica" style="margin:.35rem 0 .6rem">O que funciona aqui: ${d.acao}</div>
+      ${l.length?l.map(c=>`<div class="op-linha">
+        <div class="op-linha-info" onclick="verDetalhe('${c.cliId}')">
+          <div class="op-nome">${c.nome}</div>
+          <div class="op-meta">${c.n} compra${c.n!==1?'s':''} · ${fmt(c.total)} no total · última há ${c.desde} dias</div>
+        </div>${opZap(c.whats,`Oi ${c.nome.split(' ')[0]}! 🌿`)}</div>`).join(''):opVazio('Ninguém neste grupo.')}
+    </div>`;
+}
+
+/* 3. DESTINATÁRIOS: quem RECEBEU presente e ainda não é cliente seu */
+function opDestinatarios(vendas){
+  const jaCliente=new Set(clientes.map(c=>(c.whats||'').replace(/\D/g,'')).filter(Boolean));
+  const nomesCli=new Set(clientes.map(c=>normProd(c.nome)));
+  const mapa={};
+  vendas.forEach(v=>{
+    const nome=(v.destNome||'').trim();
+    if(!nome||v.destId)return;
+    const tel=(v.destTel||'').replace(/\D/g,'');
+    if(nomesCli.has(normProd(nome))||(tel&&jaCliente.has(tel)))return;
+    const k=normProd(nome)+'|'+tel;
+    if(!mapa[k])mapa[k]={nome,tel,vezes:0,quem:new Set(),quemId:'',bairro:v.destBairro||'',ultima:v.data};
+    mapa[k].vezes++;
+    const c=clientes.find(x=>x.id===v.cliId);
+    if(c){ mapa[k].quem.add(c.nome); if(!mapa[k].quemId)mapa[k].quemId=c.id; }
+    if((v.data||'')>(mapa[k].ultima||''))mapa[k].ultima=v.data;
+  });
+  const lista=Object.values(mapa).sort((a,b)=>b.vezes-a.vezes||(b.ultima||'').localeCompare(a.ultima||''));
+  const corpo=lista.length?lista.slice(0,30).map(d=>`<div class="op-linha">
+      <div class="op-linha-info" onclick="${d.quemId?`verDetalhe('${d.quemId}')`:''}" title="${d.quemId?'Abrir a ficha de quem presenteou':''}">
+        <div class="op-nome">${d.nome}${d.vezes>1?` <span class="op-tag" style="background:var(--verde)">${d.vezes} presentes</span>`:''}</div>
+        <div class="op-meta">${d.tel?d.tel:'sem telefone'} · presente de ${[...d.quem].slice(0,2).join(', ')||'—'}${d.bairro?' · '+d.bairro:''} ${d.quemId?'· toque para abrir a ficha de quem deu':''}</div>
+      </div>
+      <button class="btn-sm" onclick="opCadastrarDestinatario('${jsAspas(d.nome)}','${jsAspas(d.tel)}','${jsAspas(d.bairro)}')">➕ Cadastrar</button>
+      ${opZap(d.tel,`Oi ${d.nome.split(' ')[0]}! Aqui é a Manu, da Confeitos da Manu 🌿 Você recebeu um presente nosso e queria te dar as boas-vindas. Posso te mandar as novidades?`)}</div>`).join('')
+    :opVazio('Nenhum destinatário novo. Preencha o nome e o WhatsApp de quem recebe o presente para essa lista encher.');
+  return opCard('🎁 Quem recebeu presente e ainda não é sua cliente',
+    lista.length?`${lista.length} pessoas já receberam algo seu`:'',
+    corpo,
+    'Quem recebeu e amou é a lista mais barata de converter: já conhece o produto e a sua entrega.');
+}
+
+// Abre o cadastro de cliente já com o nome de quem recebeu o presente
+function opCadastrarDestinatario(nome,tel,bairro){
+  abrirFormCliente();
+  document.getElementById('fc-nome').value=nome||'';
+  document.getElementById('fc-whats').value=tel||'';
+  if(bairro)document.getElementById('fc-bairro').value=bairro;
+  const o=document.getElementById('fc-origem');
+  if(o&&!o.value)o.value=[...o.options].some(x=>x.value==='Indicação')?'Indicação':o.value;
+  toggleIndicacao(o?o.value:'');
+}
+function jsAspas(v){ return String(v==null?'':v).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+
+/* 4. COMBOS: o que a mesma pessoa leva junto — vira kit pronto */
+function opCombos(vendas){
+  const pares={};
+  const cesta={};
+  vendas.forEach(v=>{
+    const itens=(v.itens&&v.itens.length?v.itens.map(i=>i.produto):[v.produto]).filter(Boolean);
+    const k=v.cliId+'|'+v.data;
+    (cesta[k]=cesta[k]||[]).push(...itens);
+  });
+  Object.values(cesta).forEach(itens=>{
+    const uniq=[...new Set(itens.map(i=>i.trim()).filter(Boolean))];
+    for(let i=0;i<uniq.length;i++)for(let j=i+1;j<uniq.length;j++){
+      const par=[uniq[i],uniq[j]].sort();
+      const k=par.join(' + ');
+      pares[k]=(pares[k]||0)+1;
+    }
+  });
+  const lista=Object.entries(pares).map(([k,v])=>({k,v})).filter(x=>x.v>=2).sort((a,b)=>b.v-a.v).slice(0,12);
+  const corpo=lista.length?lista.map(l=>`<div class="op-linha"><div class="op-linha-info">
+      <div class="op-nome">${l.k}</div>
+      <div class="op-meta">levados juntos ${l.v} vezes</div></div></div>`).join('')
+    :opVazio('Ainda não há combinações repetidas. Lance os pedidos com vários itens para essa lista aparecer.');
+  return opCard('🧩 O que suas clientes já levam junto',
+    lista.length?'cada linha é um kit que o mercado já validou':'',
+    corpo,
+    'Transforme os 3 primeiros em produtos de catálogo com nome próprio e preço fechado. Kit pronto vende mais que item solto.');
+}
+
+/* 5. FAIXAS DE PREÇO: onde está o dinheiro e onde falta produto */
+function opFaixas(vendas){
+  const faixas=[[0,50],[50,80],[80,120],[120,180],[180,250],[250,400],[400,1e9]];
+  const dados=faixas.map(([a,b])=>({a,b,qtd:0,receita:0}));
+  vendas.forEach(v=>{
+    const val=Number(v.valor)||0;
+    const f=dados.find(d=>val>=d.a&&val<d.b);
+    if(f){f.qtd++;f.receita+=val;}
+  });
+  const maxQtd=Math.max(...dados.map(d=>d.qtd),1);
+  const total=dados.reduce((s,d)=>s+d.qtd,0)||1;
+  const corpo=`<div class="op-barras">${dados.map(d=>`
+    <div class="op-barra-linha">
+      <span class="op-barra-lbl">${d.b>1e8?'acima de R$400':'R$'+d.a+'–'+d.b}</span>
+      <span class="op-barra-fundo"><span class="op-barra" style="width:${Math.round(d.qtd/maxQtd*100)}%"></span></span>
+      <span class="op-barra-val">${d.qtd} · ${Math.round(d.qtd/total*100)}%</span>
+    </div>`).join('')}</div>`;
+  const forte=dados.reduce((m,d)=>d.receita>m.receita?d:m,dados[0]);
+  const acima=dados[dados.indexOf(forte)+1];
+  const dica=acima&&acima.qtd<forte.qtd*0.3
+    ? `A maior parte vende entre R$${forte.a} e R$${forte.b}. Logo acima (R$${acima.a}–${acima.b}) quase não há venda: um produto "premium" desenhado pra essa faixa costuma subir o ticket sem espantar a cliente.`
+    : 'Um produto novo na faixa logo acima da sua faixa campeã costuma subir o ticket médio.';
+  return opCard('💰 Faixas de preço que você vende','quantidade de pedidos por valor',corpo,dica);
+}
+
+/* 6. SAZONALIDADE: em que mês cada produto vende — o que preparar e quando */
+function opSazonalidade(vendas){
+  const meses=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  const porMes=Array(12).fill(0).map(()=>({receita:0,qtd:0,produtos:{}}));
+  vendas.forEach(v=>{
+    const m=Number(v.data.slice(5,7))-1;
+    if(isNaN(m))return;
+    porMes[m].receita+=Number(v.valor)||0;
+    porMes[m].qtd++;
+    const nome=v.produto||'—';
+    porMes[m].produtos[nome]=(porMes[m].produtos[nome]||0)+1;
+  });
+  const max=Math.max(...porMes.map(m=>m.receita),1);
+  const mesAtual=new Date().getMonth();
+  const corpo=`<div class="op-barras">${porMes.map((m,i)=>`
+    <div class="op-barra-linha ${i===mesAtual?'op-agora':''}">
+      <span class="op-barra-lbl">${meses[i]}${i===mesAtual?' (agora)':''}</span>
+      <span class="op-barra-fundo"><span class="op-barra" style="width:${Math.round(m.receita/max*100)}%"></span></span>
+      <span class="op-barra-val">${m.receita?fmt(m.receita):'—'}</span>
+    </div>`).join('')}</div>`;
+  const prox=(mesAtual+1)%12;
+  const topProx=Object.entries(porMes[prox].produtos).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]);
+  const dica=porMes[prox].qtd
+    ? `Mês que vem (${meses[prox]}) você costuma vender ${porMes[prox].qtd} pedidos. Os campeões foram: ${topProx.join(', ')}. Prepare insumos e poste esses antes.`
+    : `Mês que vem (${meses[prox]}) tem pouco histórico. É um bom mês para testar um lançamento.`;
+  return opCard('📆 Em que mês você vende','soma de todos os anos que você já registrou',corpo,dica);
+}
+
+/* 7. OCASIÕES: qual data comemorativa move seu faturamento */
+function opOcasioes(vendas){
+  const porOc={};
+  vendas.forEach(v=>{
+    const oc=v.ocasiao||'sem-ocasiao';
+    if(!porOc[oc])porOc[oc]={oc,qtd:0,receita:0,produtos:{}};
+    porOc[oc].qtd++; porOc[oc].receita+=Number(v.valor)||0;
+    const nome=v.produto||'—';
+    porOc[oc].produtos[nome]=(porOc[oc].produtos[nome]||0)+1;
+  });
+  const lista=Object.values(porOc).sort((a,b)=>b.receita-a.receita).slice(0,8);
+  const max=Math.max(...lista.map(l=>l.receita),1);
+  const corpo=lista.length?`<div class="op-barras">${lista.map(l=>`
+    <div class="op-barra-linha">
+      <span class="op-barra-lbl">${ocasiaoLabel(l.oc)}</span>
+      <span class="op-barra-fundo"><span class="op-barra" style="width:${Math.round(l.receita/max*100)}%"></span></span>
+      <span class="op-barra-val">${fmt(l.receita)} · ${l.qtd}x</span>
+    </div>
+    <div class="op-barra-extra">campeão: ${Object.entries(l.produtos).sort((a,b)=>b[1]-a[1])[0][0]}</div>`).join('')}</div>`
+    :opVazio('Marque a ocasião nos pedidos para ver isso.');
+  return opCard('🎀 Datas que mais te dão dinheiro','receita por ocasião',corpo,
+    'Para a próxima data forte, avise primeiro quem já comprou nela no ano passado — em Datas, cada data mostra esses clientes.');
+}
+
+/* 8. PRODUTOS: volume x margem, usando o custo da precificação */
+function opProdutos(vendas){
+  const porProd={};
+  vendas.forEach(v=>{
+    const nome=v.produto||'—';
+    if(!porProd[nome])porProd[nome]={nome,qtd:0,receita:0};
+    porProd[nome].qtd++; porProd[nome].receita+=Number(v.valor)||0;
+  });
+  const lista=Object.values(porProd).map(p=>{
+    const custo=custoDe(p.nome);
+    const margem=custo>0&&p.receita>0?Math.round(((p.receita-custo*p.qtd)/p.receita)*100):null;
+    return {...p,custo,margem,lucro:custo>0?p.receita-custo*p.qtd:null};
+  }).sort((a,b)=>b.receita-a.receita);
+  const comCusto=lista.filter(p=>p.margem!==null);
+  const medQtd=lista.reduce((s,p)=>s+p.qtd,0)/(lista.length||1);
+  const medMargem=comCusto.length?comCusto.reduce((s,p)=>s+p.margem,0)/comCusto.length:0;
+  const grupo=p=>{
+    if(p.margem===null)return {t:'sem custo',c:'#999'};
+    if(p.qtd>=medQtd&&p.margem>=medMargem)return {t:'campeão',c:'#2a7a2a'};
+    if(p.qtd>=medQtd&&p.margem<medMargem)return {t:'vende mas rende pouco',c:'#c98a00'};
+    if(p.qtd<medQtd&&p.margem>=medMargem)return {t:'joia escondida',c:'#3a6a9a'};
+    return {t:'repensar',c:'#b04a4a'};
+  };
+  const corpo=lista.length?lista.slice(0,20).map(p=>{
+    const g=grupo(p);
+    return `<div class="op-linha"><div class="op-linha-info">
+      <div class="op-nome">${p.nome} <span class="op-tag" style="background:${g.c}">${g.t}</span></div>
+      <div class="op-meta">${p.qtd}x · ${fmt(p.receita)}${p.margem!==null?` · margem ${p.margem}% · lucro ${fmt(p.lucro)}`:' · cadastre o custo na precificação'}</div>
+    </div></div>`;
+  }).join(''):opVazio('Sem vendas registradas ainda.');
+  const joias=lista.filter(p=>grupo(p).t==='joia escondida').slice(0,2).map(p=>p.nome);
+  return opCard('🏆 Seus produtos: o que vende x o que rende','',corpo,
+    joias.length?`Divulgue mais: ${joias.join(' e ')} — dão boa margem e vendem pouco. É o ganho mais rápido que existe.`
+      :'Cadastre o custo dos produtos na precificação para ver a margem real de cada um aqui.');
+}
+
+/* 9. DE ONDE VÊM AS CLIENTES e ONDE ELAS ESTÃO */
+function opOrigemBairro(vendas){
+  const gasto={};
+  vendas.forEach(v=>{ gasto[v.cliId]=(gasto[v.cliId]||0)+(Number(v.valor)||0); });
+  const porOrigem={},porBairro={};
+  clientes.forEach(c=>{
+    const g=gasto[c.id]||0;
+    const o=(c.origem||'').trim()||'não informado';
+    if(!porOrigem[o])porOrigem[o]={n:0,valor:0};
+    porOrigem[o].n++; porOrigem[o].valor+=g;
+    const b=(c.bairro||'').trim();
+    if(b){ if(!porBairro[b])porBairro[b]={n:0,valor:0}; porBairro[b].n++; porBairro[b].valor+=g; }
+  });
+  const mini=(obj,vazio)=>{
+    const l=Object.entries(obj).sort((a,b)=>b[1].valor-a[1].valor).slice(0,6);
+    if(!l.length)return opVazio(vazio);
+    const max=Math.max(...l.map(x=>x[1].valor),1);
+    return `<div class="op-barras">${l.map(([k,v])=>`
+      <div class="op-barra-linha">
+        <span class="op-barra-lbl">${k}</span>
+        <span class="op-barra-fundo"><span class="op-barra" style="width:${Math.round(v.valor/max*100)}%"></span></span>
+        <span class="op-barra-val">${fmt(v.valor)} · ${v.n} cli.</span>
+      </div>`).join('')}</div>`;
+  };
+  return opCard('📍 De onde vêm e onde estão','',
+    `<div class="op-duas">
+      <div><div class="op-subtitulo">Como conheceram</div>${mini(porOrigem,'Preencha "como conheceu" no cadastro.')}</div>
+      <div><div class="op-subtitulo">Bairros</div>${mini(porBairro,'Preencha o bairro no cadastro.')}</div>
+    </div>`,
+    'O canal que traz clientes que gastam mais merece mais do seu tempo — e o bairro campeão é onde vale anunciar e combinar rota de entrega.');
+}
+
+/* Painel: as 3 ações da semana, no topo */
+function opAcoesDaSemana(vendas){
+  const acoes=[];
+  const porCli={};
+  vendas.forEach(v=>{ (porCli[v.cliId]=porCli[v.cliId]||[]).push(v); });
+  let noPonto=0,valorPonto=0;
+  Object.entries(porCli).forEach(([cliId,peds])=>{
+    const datas=[...new Set(peds.map(p=>p.data))].sort();
+    if(datas.length<2)return;
+    let soma=0;
+    for(let i=1;i<datas.length;i++) soma+=Math.round((new Date(datas[i]+'T12:00')-new Date(datas[i-1]+'T12:00'))/86400000);
+    const media=soma/(datas.length-1);
+    const desde=opDias(datas[datas.length-1]);
+    if(media>0&&desde/media>=0.75&&desde/media<=1.6){ noPonto++; valorPonto+=peds.reduce((s,p)=>s+(Number(p.valor)||0),0)/peds.length; }
+  });
+  if(noPonto)acoes.push(`Chamar <b>${noPonto} cliente${noPonto!==1?'s':''}</b> que ${noPonto!==1?'estão':'está'} no ponto de recomprar — potencial de <b>${fmt(valorPonto)}</b>.`);
+  const prox=proximaDataForte();
+  if(prox){
+    const quando=prox.dias===0?'É hoje':prox.dias===1?'É amanhã':`Faltam <b>${prox.dias} dias</b> para`;
+    acoes.push(prox.receita>0
+      ? `${quando} ${prox.nome}. Nos anos anteriores essa data rendeu <b>${fmt(prox.receita)}</b>${prox.produto?` e o campeão foi <b>${prox.produto}</b>`:''}.`
+      : `${quando} ${prox.nome}. Você ainda não registrou vendas nessa data — boa chance de lançar algo e testar.`);
+  }
+  const novos=vendas.filter(v=>v.destNome&&!v.destId&&(v.destTel||'').replace(/\D/g,'')).length;
+  if(novos)acoes.push(`Você tem <b>${novos} presente${novos!==1?'s':''}</b> entregue${novos!==1?'s':''} a pessoas que ainda não são clientes — dá pra convidar pelo WhatsApp.`);
+  if(!acoes.length)acoes.push('Registre as vendas com ocasião, destinatário e itens para as sugestões aparecerem aqui.');
+  return `<div class="op-acoes">
+    <div class="op-acoes-t">🚀 Onde mexer esta semana</div>
+    <ol>${acoes.map(a=>`<li>${a}</li>`).join('')}</ol></div>`;
+}
+function proximaDataForte(){
+  const hoje=OP_HOJE(), ano=hoje.getFullYear();
+  const vendas=opVendas();
+  let melhor=null;
+  [...datasComemorativas(ano),...datasComemorativas(ano+1)].forEach(d=>{
+    if(!d.data)return;
+    const dt=new Date(d.data+'T12:00');
+    const dias=Math.round((dt-hoje)/86400000);
+    if(dias<0||dias>75)return;
+    const doAno=vendas.filter(v=>v.ocasiao===d.key);
+    const receita=doAno.reduce((s,v)=>s+(Number(v.valor)||0),0);
+    const prod={};
+    doAno.forEach(v=>{ prod[v.produto||'—']=(prod[v.produto||'—']||0)+1; });
+    const top=Object.entries(prod).sort((a,b)=>b[1]-a[1])[0];
+    if(!melhor||dias<melhor.dias)melhor={nome:d.nome,dias,receita,produto:top?top[0]:''};
+  });
+  return melhor;
+}
+
+async function renderOportunidades(){
+  const el=document.getElementById('op-conteudo');
+  el.innerHTML='<div class="op-vazio">Lendo seus pedidos...</div>';
+  await getPedidosTodos();
+  const vendas=opVendas();
+  if(!vendas.length){ el.innerHTML=opVazio('Ainda não há vendas finalizadas para analisar.'); return; }
+  el.innerHTML=opAcoesDaSemana(vendas)
+    +opRecompra(vendas)
+    +opSegmentos(vendas)
+    +opDestinatarios(vendas)
+    +opCombos(vendas)
+    +opProdutos(vendas)
+    +opFaixas(vendas)
+    +opOcasioes(vendas)
+    +opSazonalidade(vendas)
+    +opOrigemBairro(vendas);
 }
 
 // Quais problemas mais aconteceram no mes, do mais frequente pro menos.
@@ -2460,6 +3266,8 @@ function blocoProblemas(mes){
     porTipo[t].qtd++;
     porTipo[t].valor+=(Number(p.valor)||0);
     if(p.problemaObs)porTipo[t].obs.push(p.problemaObs);
+    if(p.problemaSolucao)porTipo[t].solucoes=[...(porTipo[t].solucoes||[]),p.problemaSolucao];
+    if(p.problemaResolvido!=='sim')porTipo[t].abertos=(porTipo[t].abertos||0)+1;
   });
   const lista=Object.values(porTipo).sort((a,b)=>b.qtd-a.qtd);
   const maior=lista[0].qtd;
@@ -2471,6 +3279,8 @@ function blocoProblemas(mes){
       <div style="height:6px;background:#f7d6d6;border-radius:4px;margin-top:3px;overflow:hidden">
         <div style="height:100%;width:${Math.round((t.qtd/maior)*100)}%;background:#c94040;border-radius:4px"></div></div>
       ${t.obs.length?`<div style="font-size:11px;color:#8a5a5a;margin-top:3px">${t.obs.slice(0,3).join(' · ')}${t.obs.length>3?' · +'+(t.obs.length-3):''}</div>`:''}
+      ${t.solucoes&&t.solucoes.length?`<div style="font-size:11px;color:#1a6a3a;margin-top:2px">🛠️ ${[...new Set(t.solucoes)].join(' · ')}</div>`:''}
+      ${t.abertos?`<div style="font-size:11px;color:#a02020;font-weight:600;margin-top:2px">❌ ${t.abertos} ainda em aberto</div>`:''}
     </div>`).join('')}
   </div>`;
 }
@@ -2660,7 +3470,7 @@ async function exportarTudoCSV(){
   const cab=['cliente_id','cliente','whatsapp','whatsapp_2','bairro','cidade','como_conheceu','cliente_desde',
              'pedido_data','data_confirmacao','dias_antecedencia','produto','item_de',
              'valor_item','valor_pedido','frete','status','ocasiao','aniversariante',
-             'problema_tipo','problema_obs'];
+             'problema_tipo','problema_obs','problema_solucao','problema_solucao_obs','problema_resolvido'];
   const linhas=[cab];
   let nPed=0, nLin=0, idx=0;
 
@@ -2686,7 +3496,8 @@ async function exportarTudoCSV(){
         ? p.itens.filter(it=>it&&(it.produto||'').trim())
         : [];
       const cauda=[Number(p.valor)||0, Number(p.entrega)||0, p.status||'', p.ocasiao||'',
-                   anon?'':(p.anivNome||''), p.problemaTipo||'', p.problemaObs||''];
+                   anon?'':(p.anivNome||''), p.problemaTipo||'', p.problemaObs||'',
+                   p.problemaSolucao||'', p.problemaSolucaoObs||'', p.problemaResolvido||''];
       if(itens.length){
         itens.forEach((it,k)=>{
           linhas.push([...base, (it.produto||'').trim(), (k+1)+'/'+itens.length,
@@ -2723,27 +3534,15 @@ function toggleAvisoIndicacao(v){
 function ehNotebook(){
   try{ return window.matchMedia('(min-width:1100px)').matches; }catch(e){ return false; }
 }
-// Os dois paineis varrem os pedidos de TODOS os clientes, o que demora
-// bastante com a base cheia. Por isso nao rodam sozinhos: voce manda carregar.
-const _painelPronto={alertas:false,datas:false};
-async function carregarPainel(qual){
-  const cx=document.getElementById('carregar-'+qual);
-  if(cx)cx.innerHTML='<p style="margin:0">Lendo os pedidos... pode demorar um pouco.</p>';
-  try{
-    if(qual==='alertas') await renderAlertas();
-    else await renderDatasQuentes();
-    _painelPronto[qual]=true;
-    if(cx)cx.style.display='none';
-  }catch(e){
-    console.error('painel '+qual,e);
-    if(cx)cx.innerHTML='<p style="margin:0 0 .5rem">N\u00e3o consegui carregar.</p><button onclick="carregarPainel(\''+qual+'\')">\u21bb Tentar de novo</button>';
-  }
-}
-// mantido para quem ja estava carregado: atualiza sem pedir de novo
+let _painelTimer=null;
 function atualizarPaineisLaterais(){
   if(!ehNotebook())return;
-  if(_painelPronto.alertas)renderAlertas().catch(e=>console.error(e));
-  if(_painelPronto.datas)renderDatasQuentes().catch(e=>console.error(e));
+  clearTimeout(_painelTimer);
+  // espera os dados assentarem: o onSnapshot dispara varias vezes seguidas
+  _painelTimer=setTimeout(()=>{
+    try{ renderAlertas(); }catch(e){ console.error('painel alertas',e); }
+    try{ renderDatasQuentes(); }catch(e){ console.error('painel datas',e); }
+  },500);
 }
 window.addEventListener('resize',()=>{
   // so reage quando cruza a fronteira celular <-> notebook
