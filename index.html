@@ -422,6 +422,11 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
       <div id="alerta-inativos"></div>
     </div>
     <div class="resumo-card">
+      <div class="section-header"><h3>💗 Namoros chegando (30 dias)</h3><span class="badge-count" id="badge-namoro">0</span></div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:.75rem">Casais que já compraram com você e estão perto de um mês ou ano juntos.</p>
+      <div id="alerta-namoros"></div>
+    </div>
+    <div class="resumo-card">
       <div class="section-header"><h3>🎁 Aniversários de destinatários (30 dias)</h3><span class="badge-count" id="badge-dest">0</span></div>
       <p style="font-size:12px;color:var(--muted);margin-bottom:.75rem">Pessoas que já receberam presentes seus — oportunidade de contatar quem comprou.</p>
       <div id="alerta-destinatarios"></div>
@@ -649,7 +654,7 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
       </div>
       <div class="frow">
         <div class="fs"><label>Confirmação</label><input type="date" id="fp-data-conf" onchange="syncDataEntrega()"></div>
-        <div class="fs"><label>Entrega</label><input type="date" id="fp-data" onchange="marcarEntregaManual()"></div>
+        <div class="fs"><label>Entrega</label><input type="date" id="fp-data" onchange="marcarEntregaManual();namoroDoInicio()"></div>
       </div>
       <div class="frow">
         <div class="fs"><label>Status</label>
@@ -719,6 +724,22 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
           <option value="sem-ocasiao">Sem ocasião especial</option>
           <option value="outro">Outro</option>
         </select>
+      </div>
+      <div id="campos-namoro" style="display:none;background:var(--rosa-bg);border:1px solid #e8c4be;border-radius:10px;padding:.85rem;margin-bottom:1rem">
+        <div style="font-size:12px;font-weight:600;color:var(--rosa);margin-bottom:.65rem;text-transform:uppercase;letter-spacing:.4px">💗 Tempo de namoro</div>
+        <div class="frow" style="margin-bottom:.5rem">
+          <div class="fs" style="margin-bottom:0"><label>Faz quanto tempo</label>
+            <div style="display:grid;grid-template-columns:1fr 1.3fr;gap:.5rem">
+              <input type="number" id="fp-namoro-qtd" min="1" step="1" placeholder="3" oninput="namoroDoTempo()">
+              <select id="fp-namoro-un" onchange="namoroDoTempo()">
+                <option value="meses">meses</option>
+                <option value="anos">anos</option>
+              </select>
+            </div>
+          </div>
+          <div class="fs" style="margin-bottom:0"><label>Começaram em</label><input type="date" id="fp-namoro-inicio" onchange="namoroDoInicio()"></div>
+        </div>
+        <div id="fp-namoro-dica" style="font-size:12px;color:#8a5a52;line-height:1.5"></div>
       </div>
       <div id="campos-aniversario" style="display:none;background:var(--rosa-bg);border:1px solid #e8c4be;border-radius:10px;padding:.85rem;margin-bottom:1rem">
         <div style="font-size:12px;font-weight:600;color:var(--rosa);margin-bottom:.65rem;text-transform:uppercase;letter-spacing:.4px">🎂 Aniversariante</div>
@@ -1316,7 +1337,107 @@ function selecionarIndicado(id,nome){
   document.getElementById('fc-indicado-resultado').innerHTML=`<div style="background:var(--verde-bg);border-radius:8px;padding:.4rem .75rem;font-size:13px;color:var(--verde)">✓ ${nome}</div>`;
 }
 
-function toggleAniversario(o){document.getElementById('campos-aniversario').style.display=o==='aniversario'?'block':'none';}
+
+/* ============================================================
+   TEMPO DE NAMORO
+   Em pedido de aniversário de namoro você anota há quanto tempo
+   estão juntos (ou desde quando). Com isso dá pra avisar o
+   próximo mês­versario / aniversário antes que ele chegue.
+   ============================================================ */
+function ehOcasiaoNamoro(o){
+  if(!o||o==='dia-dos-namorados')return false;   // Dia dos Namorados é outra coisa
+  return semAcento(o).indexOf('namoro')>-1;
+}
+function _dataValida(iso){
+  if(!iso)return null;
+  const d=new Date(iso+'T12:00');
+  return isNaN(d.getTime())?null:d;
+}
+// Quantos meses inteiros se passaram entre duas datas
+function mesesEntre(iniISO,fimISO){
+  const a=_dataValida(iniISO), b=_dataValida(fimISO);
+  if(!a||!b)return null;
+  let m=(b.getFullYear()-a.getFullYear())*12+(b.getMonth()-a.getMonth());
+  if(b.getDate()<a.getDate())m--;
+  return m;
+}
+// Soma meses mantendo o dia; em mês curto cai no último dia (31/01 + 1 mês = 28/02)
+function somaMeses(iso,n){
+  const d=_dataValida(iso); if(!d)return '';
+  const dia=d.getDate();
+  d.setMonth(d.getMonth()+n);
+  if(d.getDate()!==dia)d.setDate(0);
+  return d.toISOString().slice(0,10);
+}
+function rotuloMarco(n){
+  if(n>0&&n%12===0){const a=n/12;return a+(a===1?' ano':' anos');}
+  return n+(n===1?' mês':' meses');
+}
+/* Até 1 ano o casal costuma comemorar todo mês; depois disso, por ano. */
+function proximoMarcoNamoro(inicioISO,refISO){
+  const hojeISO=refISO||new Date().toISOString().slice(0,10);
+  let m=mesesEntre(inicioISO,hojeISO);
+  if(m===null)return null;
+  if(m<0)m=0;
+  const prox=m<12?m+1:(Math.floor(m/12)+1)*12;
+  const data=somaMeses(inicioISO,prox);
+  const dias=Math.round((_dataValida(data)-_dataValida(hojeISO))/86400000);
+  return {n:prox,rotulo:rotuloMarco(prox),data,dias};
+}
+
+function _entregaDoForm(){
+  return document.getElementById('fp-data')?.value
+      || document.getElementById('fp-data-conf')?.value
+      || new Date().toISOString().slice(0,10);
+}
+// Digitou "3 meses" -> descobre desde quando, contando da data de entrega
+function namoroDoTempo(){
+  const qtd=parseInt(document.getElementById('fp-namoro-qtd').value,10);
+  const un=document.getElementById('fp-namoro-un').value;
+  if(!qtd||qtd<1){document.getElementById('fp-namoro-inicio').value='';namoroDica();return;}
+  const meses=un==='anos'?qtd*12:qtd;
+  document.getElementById('fp-namoro-inicio').value=somaMeses(_entregaDoForm(),-meses);
+  namoroDica();
+}
+// Escolheu a data -> preenche quanto tempo faz
+function namoroDoInicio(){
+  const ini=document.getElementById('fp-namoro-inicio')?.value;
+  if(!ini){namoroDica();return;}
+  const m=mesesEntre(ini,_entregaDoForm());
+  if(m!==null&&m>=0){
+    const anos=(m>0&&m%12===0)?m/12:0;
+    document.getElementById('fp-namoro-qtd').value=anos||m;
+    document.getElementById('fp-namoro-un').value=anos?'anos':'meses';
+  }
+  namoroDica();
+}
+function namoroDica(){
+  const el=document.getElementById('fp-namoro-dica'); if(!el)return;
+  const ini=document.getElementById('fp-namoro-inicio')?.value;
+  if(!ini){el.textContent='Preencha um dos dois — o outro se completa sozinho.';return;}
+  const m=mesesEntre(ini,_entregaDoForm());
+  const prox=proximoMarcoNamoro(ini);
+  el.innerHTML='Juntos desde <strong>'+ini.split('-').reverse().join('/')+'</strong>'
+    +(m!==null&&m>=0?' · <strong>'+rotuloMarco(m)+'</strong> na entrega':'')
+    +(prox?'<br>Próximo marco: <strong>'+prox.rotulo+'</strong> em '+prox.data.split('-').reverse().join('/')
+      +(prox.dias>=0?' (em '+prox.dias+' dia'+(prox.dias===1?'':'s')+')':''):'');
+}
+function limparCamposNamoro(){
+  const q=document.getElementById('fp-namoro-qtd'), i=document.getElementById('fp-namoro-inicio');
+  if(q)q.value=''; if(i)i.value='';
+  const u=document.getElementById('fp-namoro-un'); if(u)u.value='meses';
+  namoroDica();
+}
+
+function toggleAniversario(o){
+  document.getElementById('campos-aniversario').style.display=o==='aniversario'?'block':'none';
+  const cn=document.getElementById('campos-namoro');
+  if(cn){
+    const mostra=ehOcasiaoNamoro(o);
+    cn.style.display=mostra?'block':'none';
+    if(mostra)namoroDica();
+  }
+}
 function toggleCancelado(s){
   document.getElementById('campo-retido').style.display=s==='cancelado'?'block':'none';
   const cp=document.getElementById('campo-problema');
@@ -1610,6 +1731,34 @@ async function renderAlertas(){
       <div class="dq-info"><div class="dq-nome">${c.nome}</div><div class="dq-sub">${c.whats||'—'} · último pedido há ${c.dias} dias</div></div>
       <div class="dq-data" style="color:var(--muted)">${c.dias}d</div>
     </div>`).join(''):`<p style="font-size:13px;color:var(--muted);padding:.5rem 0">Nenhum cliente inativo por mais de 90 dias.</p>`;
+
+  // Próximos marcos de namoro (30 dias). Fica um por casal: vale o pedido
+  // mais recente, que é onde a data de início foi conferida por último.
+  const porCasal={};
+  Object.entries(pedidosPorCliente).forEach(([cliId,peds])=>{
+    peds.forEach(p=>{
+      if(!p.namoroInicio)return;
+      const atual=porCasal[cliId];
+      if(!atual||String(p.data||'')>String(atual.data||''))porCasal[cliId]={...p,cliId};
+    });
+  });
+  const namoros=[];
+  Object.values(porCasal).forEach(p=>{
+    const cli=clientes.find(x=>x.id===p.cliId);
+    const prox=proximoMarcoNamoro(p.namoroInicio);
+    if(prox&&prox.dias>=0&&prox.dias<=30)namoros.push({...p,cli,prox});
+  });
+  namoros.sort((a,b)=>a.prox.dias-b.prox.dias);
+  document.getElementById('badge-namoro').textContent=namoros.length;
+  document.getElementById('alerta-namoros').innerHTML=namoros.length?namoros.map(n=>`
+    <div class="data-quente-card" onclick="verDetalhe('${n.cliId}')">
+      <div class="dq-icon">\u{1F497}</div>
+      <div class="dq-info">
+        <div class="dq-nome">${n.cli?.nome||'\u2014'}</div>
+        <div class="dq-sub">${n.prox.rotulo} juntos \u00b7 ${n.prox.data.split('-').reverse().join('/')}</div>
+      </div>
+      <div class="dq-data">${n.prox.dias===0?'Hoje!':n.prox.dias===1?'Amanh\u00e3':'Em '+n.prox.dias+' dias'}</div>
+    </div>`).join(''):`<p style="font-size:13px;color:var(--muted);padding:.5rem 0">Nenhum marco de namoro nos pr\u00f3ximos 30 dias.</p>`;
 
   // Aniversários de destinatários nos próximos 30 dias
   const destAnivs=[];
@@ -1987,7 +2136,7 @@ function renderDetalhe(c,peds,vinculos){
       const antec=p.dataConfirmacao&&p.data?Math.round((new Date(p.data+'T12:00')-new Date(p.dataConfirmacao+'T12:00'))/(1000*60*60*24)):null;
       const isCan=p.status==='cancelado';
       return`<div class="pedido-card" style="overflow:hidden;${isCan?'opacity:.7;border-color:#f0a0a0':''}">
-        <div class="pedido-head"><div class="pedido-produto">${isCan?'<s>':''}${p.produto||'Produto'}${isCan?'</s>':''}</div>
+        <div class="pedido-head"><div class="pedido-produto">${isCan?'<s>':''}${p.produto||'Produto'}${isCan?'</s>':''}${(p.itens?.length===1&&p.itens[0].cod)?` <span style="color:var(--muted);font-size:10px;font-weight:400">#${p.itens[0].cod}</span>`:''}</div>
         <div style="text-align:right"><div class="pedido-valor" style="${isCan?'text-decoration:line-through;color:var(--muted)':''}">${fmt(total)}</div>
         <span class="pedido-status status-${p.status||'finalizado-ok'}">${{'finalizado-ok':'✅ Ok','finalizado-problema':'⚠️ Problema','cancelado':'❌ Cancelado'}[p.status]||'Ok'}</span></div></div>
         ${p.status==='finalizado-problema'&&(p.problemaTipo||p.problemaObs||p.problemaSolucao)?`<div style="font-size:12px;color:#a02020;background:#fde8e8;border-radius:8px;padding:.45rem .6rem;margin-top:.4rem">
@@ -1995,7 +2144,9 @@ function renderDetalhe(c,peds,vinculos){
           ${p.problemaSolucao||p.problemaSolucaoObs?`<div style="margin-top:.25rem;color:#1a6a3a">🛠️ ${p.problemaSolucao||''}${p.problemaSolucao&&p.problemaSolucaoObs?' · ':''}${p.problemaSolucaoObs||''}</div>`:''}
           ${p.problemaResolvido?`<div style="margin-top:.15rem;font-weight:600;color:${p.problemaResolvido==='sim'?'#1a6a3a':p.problemaResolvido==='parcial'?'#8a6a1e':'#a02020'}">${p.problemaResolvido==='sim'?'✅ Resolvido':p.problemaResolvido==='parcial'?'🟡 Resolvido em parte':'❌ Ainda em aberto'}</div>`:''}
         </div>`:''}
-        ${p.itens?.length>1?`<div style="margin:.35rem 0;padding:.4rem .6rem;background:var(--branco);border-radius:6px;font-size:12px">${p.itens.map(it=>`<div style="display:flex;justify-content:space-between;padding:.15rem 0;border-bottom:1px solid var(--borda)"><span>${it.produto}</span><span style="color:var(--verde);font-weight:500">${fmt(it.valor)}</span></div>`).join('')}</div>`:''}
+        ${p.namoroInicio?(()=>{const _m=mesesEntre(p.namoroInicio,p.data||p.namoroInicio);
+          return `<div style="font-size:12px;color:var(--rosa);background:var(--rosa-bg);border-radius:6px;padding:.3rem .55rem;margin:.35rem 0;display:inline-block">\u{1F497} ${_m!==null&&_m>=0?rotuloMarco(_m)+' de namoro':'namoro desde '+p.namoroInicio.split('-').reverse().join('/')}</div>`;})():''}
+        ${p.itens?.length>1?`<div style="margin:.35rem 0;padding:.4rem .6rem;background:var(--branco);border-radius:6px;font-size:12px">${p.itens.map(it=>`<div style="display:flex;justify-content:space-between;padding:.15rem 0;border-bottom:1px solid var(--borda)"><span>${it.produto}${it.cod?` <span style="color:var(--muted);font-size:10px">#${it.cod}</span>`:''}</span><span style="color:var(--verde);font-weight:500">${fmt(it.valor)}</span></div>`).join('')}</div>`:''}
         ${isCan&&p.valorRetido>0?`<div style="font-size:12px;color:var(--danger);font-weight:500;margin-bottom:.3rem">💰 Retido: ${fmt(p.valorRetido)}</div>`:''}
         ${(()=>{const fs=fotosDoPedido(p);if(!fs.length)return '';
           fotosNaTela[p.id]=fs;
@@ -2299,9 +2450,10 @@ function addDoCatalogo(idx){
   if(vazia){
     primeira.querySelector('.item-produto').value=p.nome;
     primeira.querySelector('.item-valor').value=p.preco||'';
+    aplicarCodLinha(primeira,p.cod||'');
   }else{
     const div=document.createElement('div');
-    div.innerHTML=itemRowHTML({produto:p.nome,valor:p.preco||''},container.children.length);
+    div.innerHTML=itemRowHTML({produto:p.nome,valor:p.preco||'',cod:p.cod||''},container.children.length);
     container.appendChild(div.firstChild);
   }
   calcTotalItens();
@@ -2316,13 +2468,34 @@ function renderItensPedido(itens){
 function itemRowHTML(item,i){
   const dlId='dl-item-'+i+'-'+Date.now();
   const opts=cadastros.produto.map(v=>`<option value="${v}">`).join('');
-  return`<div class="pedido-item-row" style="display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem">
-    <input type="text" class="item-produto" list="${dlId}" autocomplete="off" placeholder="Produto..." value="${item.produto||''}" oninput="calcTotalItens()" style="flex:2;border:1px solid var(--borda);border-radius:8px;padding:.6rem .75rem;font-size:14px;font-family:'Inter',sans-serif;outline:none;background:var(--creme)">
+  const _cod=item.cod||'';
+  return`<div class="pedido-item-row" style="margin-bottom:.5rem">
+    <div style="display:flex;gap:.5rem;align-items:center">
+    <input type="text" class="item-produto" list="${dlId}" autocomplete="off" placeholder="Produto..." value="${item.produto||''}" oninput="itemProdutoEditado(this)" style="flex:2;border:1px solid var(--borda);border-radius:8px;padding:.6rem .75rem;font-size:14px;font-family:'Inter',sans-serif;outline:none;background:var(--creme)">
     <datalist id="${dlId}">${opts}</datalist>
     <input type="number" class="item-valor" placeholder="R$" value="${item.valor||''}" oninput="calcTotalItens()" min="0" step="0.01" style="flex:1;border:1px solid var(--borda);border-radius:8px;padding:.6rem .75rem;font-size:14px;font-family:'Inter',sans-serif;outline:none;background:var(--creme)">
     <button type="button" onclick="removeItemPedido(this)" style="background:none;border:1px solid #f0a0a0;border-radius:8px;padding:.55rem .65rem;color:var(--danger);cursor:pointer;font-size:16px;flex-shrink:0">×</button>
+    </div>
+    <input type="hidden" class="item-cod" value="${_cod}">
+    <div class="item-cod-label" style="font-size:11px;color:var(--verde);margin:.25rem 0 0 .15rem;${_cod?'':'display:none'}">✓ #${_cod} · do catálogo</div>
   </div>`;
 }
+/* O código só vale enquanto o nome for o do catálogo. Se você editar
+   o nome à mão, o código sai — senão ficaria apontando pro produto errado. */
+function aplicarCodLinha(row,cod){
+  const h=row.querySelector('.item-cod'); if(h)h.value=cod||'';
+  const l=row.querySelector('.item-cod-label');
+  if(l){
+    l.textContent=cod?('\u2713 #'+cod+' \u00b7 do cat\u00e1logo'):'';
+    l.style.display=cod?'block':'none';
+  }
+}
+function itemProdutoEditado(input){
+  const row=input.closest('.pedido-item-row');
+  if(row&&row.querySelector('.item-cod')?.value)aplicarCodLinha(row,'');
+  calcTotalItens();
+}
+
 function addItemPedido(){
   const container = document.getElementById('fp-itens-container');
   const div = document.createElement('div');
@@ -2417,7 +2590,12 @@ function abrirFormPedido(cliId,pedido=null){
   document.getElementById('fp-problema-solucao-obs').value=pedido?.problemaSolucaoObs||'';
   document.getElementById('fp-problema-resolvido').value=pedido?.problemaResolvido||'';
   toggleCancelado(stValido);
+  const _ni=document.getElementById('fp-namoro-inicio');
+  if(_ni){_ni.value=pedido?.namoroInicio||'';}
+  const _nq=document.getElementById('fp-namoro-qtd'); if(_nq)_nq.value='';
+  const _nu=document.getElementById('fp-namoro-un'); if(_nu)_nu.value='meses';
   toggleAniversario(pedido?.ocasiao||'');
+  if(pedido?.namoroInicio)namoroDoInicio();
   atualizarSelectOcasiao();
   document.getElementById('modal-pedido').style.display='flex';
 
@@ -2435,7 +2613,7 @@ function salvarRascunho(cliId){
   if(document.getElementById('fp-ped-id')?.value)return;
   if(document.getElementById('modal-pedido')?.style.display!=='flex')return;
   const itensEls=document.querySelectorAll('.pedido-item-row');
-  const itens=Array.from(itensEls).map(row=>({produto:row.querySelector('.item-produto').value.trim(),valor:parseFloat(row.querySelector('.item-valor').value)||0})).filter(i=>i.produto);
+  const itens=Array.from(itensEls).map(row=>({produto:row.querySelector('.item-produto').value.trim(),valor:parseFloat(row.querySelector('.item-valor').value)||0,cod:(row.querySelector('.item-cod')?.value||'').trim()})).filter(i=>i.produto);
   const rascunho={itens,entrega:parseFloat(document.getElementById('fp-entrega')?.value)||0,data:document.getElementById('fp-data')?.value||'',dataConfirmacao:document.getElementById('fp-data-conf')?.value||'',status:document.getElementById('fp-status')?.value||'',ocasiao:document.getElementById('fp-ocasiao')?.value||'',obs:document.getElementById('fp-obs')?.value.trim()||'',destNome:capitalizarNome(document.getElementById('fp-dest-nome')?.value.trim()||''),destTel:document.getElementById('fp-dest-tel')?.value?.trim()||'',destBairro:document.getElementById('fp-dest-bairro')?.value.trim()||'',remetente:capitalizarNome(document.getElementById('fp-remetente')?.value.trim()||'')};
   if(itens.length)sessionStorage.setItem('rascunho-pedido-'+cliId,JSON.stringify(rascunho));
 }
@@ -2460,7 +2638,8 @@ async function salvarPedido(){
   const itensEls = document.querySelectorAll('.pedido-item-row');
   const itens = Array.from(itensEls).map(row=>({
     produto: row.querySelector('.item-produto').value.trim(),
-    valor: parseFloat(row.querySelector('.item-valor').value)||0
+    valor: parseFloat(row.querySelector('.item-valor').value)||0,
+    cod: (row.querySelector('.item-cod')?.value||'').trim()
   })).filter(i=>i.produto);
   if(!itens.length){alert('Informe pelo menos um produto.');_liberar();return;}
   const produto = itens.map(i=>i.produto).join(', ');
@@ -2494,7 +2673,7 @@ async function salvarPedido(){
     }
   }
 
-  const dados={produto,valor,itens,entrega:parseFloat(document.getElementById('fp-entrega')?.value)||0,data:document.getElementById('fp-data')?.value||'',dataConfirmacao:document.getElementById('fp-data-conf')?.value||'',status,valorRetido:status==='cancelado'?(parseFloat(document.getElementById('fp-retido')?.value)||0):0,problemaTipo:status==='finalizado-problema'?(document.getElementById('fp-problema-tipo')?.value==='__outro'?'Outro':(document.getElementById('fp-problema-tipo')?.value||'')):'',problemaObs:status==='finalizado-problema'?(document.getElementById('fp-problema-obs')?.value.trim()||''):'',problemaSolucao:status==='finalizado-problema'?(document.getElementById('fp-problema-solucao-tipo')?.value||''):'',problemaSolucaoObs:status==='finalizado-problema'?(document.getElementById('fp-problema-solucao-obs')?.value.trim()||''):'',problemaResolvido:status==='finalizado-problema'?(document.getElementById('fp-problema-resolvido')?.value||''):'',ocasiao:document.getElementById('fp-ocasiao')?.value||'',anivNome:document.getElementById('fp-ocasiao')?.value==='aniversario'?capitalizarNome(document.getElementById('fp-aniv-nome')?.value.trim()||''):'',anivId:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-id')?.value||''):'',anivData:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-data')?.value||''):'',remetente:capitalizarNome(document.getElementById('fp-remetente')?.value.trim()||''),destNome:capitalizarNome(document.getElementById('fp-dest-nome')?.value.trim()||''),destId,destTel:document.getElementById('fp-dest-tel')?.value?.trim()||'',destLogradouro:destLogr,destNumero:destNum,destComplemento:destComp,destBairro,destEnd:[destLogr,destNum,destComp].filter(Boolean).join(', '),obs:document.getElementById('fp-obs')?.value.trim()||'',foto:fotosPedido[0]||'',fotos:fotosPedido.slice(),atualizado:new Date().toISOString()};
+  const dados={produto,valor,itens,entrega:parseFloat(document.getElementById('fp-entrega')?.value)||0,data:document.getElementById('fp-data')?.value||'',dataConfirmacao:document.getElementById('fp-data-conf')?.value||'',status,valorRetido:status==='cancelado'?(parseFloat(document.getElementById('fp-retido')?.value)||0):0,problemaTipo:status==='finalizado-problema'?(document.getElementById('fp-problema-tipo')?.value==='__outro'?'Outro':(document.getElementById('fp-problema-tipo')?.value||'')):'',problemaObs:status==='finalizado-problema'?(document.getElementById('fp-problema-obs')?.value.trim()||''):'',problemaSolucao:status==='finalizado-problema'?(document.getElementById('fp-problema-solucao-tipo')?.value||''):'',problemaSolucaoObs:status==='finalizado-problema'?(document.getElementById('fp-problema-solucao-obs')?.value.trim()||''):'',problemaResolvido:status==='finalizado-problema'?(document.getElementById('fp-problema-resolvido')?.value||''):'',ocasiao:document.getElementById('fp-ocasiao')?.value||'',namoroInicio:ehOcasiaoNamoro(document.getElementById('fp-ocasiao')?.value)?(document.getElementById('fp-namoro-inicio')?.value||''):'',anivNome:document.getElementById('fp-ocasiao')?.value==='aniversario'?capitalizarNome(document.getElementById('fp-aniv-nome')?.value.trim()||''):'',anivId:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-id')?.value||''):'',anivData:document.getElementById('fp-ocasiao')?.value==='aniversario'?(document.getElementById('fp-aniv-data')?.value||''):'',remetente:capitalizarNome(document.getElementById('fp-remetente')?.value.trim()||''),destNome:capitalizarNome(document.getElementById('fp-dest-nome')?.value.trim()||''),destId,destTel:document.getElementById('fp-dest-tel')?.value?.trim()||'',destLogradouro:destLogr,destNumero:destNum,destComplemento:destComp,destBairro,destEnd:[destLogr,destNum,destComp].filter(Boolean).join(', '),obs:document.getElementById('fp-obs')?.value.trim()||'',foto:fotosPedido[0]||'',fotos:fotosPedido.slice(),atualizado:new Date().toISOString()};
   itens.forEach(it=>{if(it.produto)autoSalvarCadastro('produto',it.produto);});
   if(status==='finalizado-problema'){
     const _pt=document.getElementById('fp-problema-tipo')?.value||'';
