@@ -508,8 +508,7 @@ body{font-family:'Inter',sans-serif;background:var(--creme);color:var(--texto);m
       </div>
       <button class="btn-primary" onclick="carregarConferencia()">🔄 Atualizar</button>
     </div>
-    <datalist id="conf-dl"></datalist>
-    <div id="conf-lista"></div>
+        <div id="conf-lista"></div>
   </div>
 </div>
 <div id="aba-pontos" style="display:none">
@@ -3768,6 +3767,7 @@ window._eraNotebook=ehNotebook();
 // histórico do cliente. Nada é gravado no cliente sem você clicar em Lançar.
 let confLista=[],confEdits={},confErro='',confCarregando=false;
 const confEsc=t=>String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const confFmtTel=v=>{let d=String(v||'').replace(/\D/g,'');if(d.length>11&&d.indexOf('55')===0)d=d.slice(2);d=d.slice(0,11);if(!d)return'';if(d.length<=2)return'('+d;const dd=d.slice(0,2),r=d.slice(2);if(d.length<=6)return'('+dd+') '+r;if(d.length<=10)return'('+dd+') '+r.slice(0,4)+'-'+r.slice(4);return'('+dd+') '+r.slice(0,1)+' '+r.slice(1,5)+'-'+r.slice(5);};
 const confDig=t=>String(t||'').replace(/\D/g,'');
 const confHdr=()=>({apikey:CAT_KEY,Authorization:'Bearer '+CAT_KEY,'Content-Type':'application/json'});
 
@@ -3787,7 +3787,7 @@ function confPadrao(row){
   const sub=itens.reduce((t,i)=>t+i.valor,0);
   const idMs=Number(row.id);
   const cli=confAcharCliente(s.ctel);
-  return{cliId:cli?cli.id:'',cliTxt:cli?cli.nome+' — '+(cli.whats||''):'',itens,
+  return{cliId:cli?cli.id:'',cliTxt:cli?(cli.whats||''):'',itens,
     produto:itens.map(i=>i.produto).join(', ')||'Pedido',
     valor:Math.max(0,sub-(parseFloat(s.desc)||0)),entrega:parseFloat(s.taxa)||0,
     data:s.dped||row.data||'',dataConf:idMs>1e12?new Date(idMs).toISOString().slice(0,10):'',
@@ -3808,7 +3808,7 @@ async function carregarConferencia(silencioso){
 }
 function confRematch(){
   let mudou=false;
-  confLista.forEach(row=>{const d=confDados(row);if(!d.cliId){const c=confAcharCliente((row.state||{}).ctel);if(c){d.cliId=c.id;d.cliTxt=c.nome+' — '+(c.whats||'');mudou=true;}}});
+  confLista.forEach(row=>{const d=confDados(row);if(!d.cliId){const c=confAcharCliente((row.state||{}).ctel);if(c){d.cliId=c.id;d.cliTxt=c.whats||'';mudou=true;}}});
   const vis=document.getElementById('aba-conferir');
   if(mudou&&vis&&vis.style.display!=='none')renderConferir();else atualizarBadgeConferir();
 }
@@ -3821,10 +3821,11 @@ function confSet(id,campo,valor){
   d[campo]=(campo==='valor'||campo==='entrega')?(parseFloat(String(valor).replace(',','.'))||0):valor;
 }
 function confEscolherCliente(id,txt){
+  // só pelo número do WhatsApp (pelo nome poderia dar confusão)
   const row=confLista.find(r=>String(r.id)===String(id));if(!row)return;
   const d=confDados(row);
-  const c=clientes.find(x=>(x.nome+' — '+(x.whats||''))===txt);
-  d.cliTxt=txt;d.cliId=c?c.id:'';
+  const c=confAcharCliente(txt);
+  d.cliTxt=c?(c.whats||txt):txt;d.cliId=c?c.id:'';
   renderConferir();
 }
 function confCadastrar(id){
@@ -3838,8 +3839,6 @@ function confCadastrar(id){
 function renderConferir(){
   atualizarBadgeConferir();
   const box=document.getElementById('conf-lista');if(!box)return;
-  const dl=document.getElementById('conf-dl');
-  if(dl)dl.innerHTML=clientes.map(c=>`<option value="${confEsc(c.nome+' — '+(c.whats||''))}"></option>`).join('');
   if(confCarregando&&!confLista.length){box.innerHTML='<div class="empty"><p>Carregando pedidos da Comanda…</p></div>';return;}
   if(confErro){box.innerHTML=`<div class="empty"><div class="empty-icon">⚠️</div><p>Não consegui buscar os pedidos (${confEsc(confErro)}).</p></div>`;return;}
   if(!confLista.length){box.innerHTML='<div class="empty"><div class="empty-icon">✅</div><p>Nada para conferir. Quando finalizar um pedido na Comanda, ele aparece aqui.</p></div>';return;}
@@ -3847,13 +3846,14 @@ function renderConferir(){
   box.innerHTML=confLista.map(row=>{
     const d=confDados(row),id=confEsc(row.id);
     const f=(campo,rot,tipo,extra)=>`<div class="fs"><label>${rot}</label><input type="${tipo||'text'}" ${extra||''} value="${confEsc(d[campo])}" oninput="confSet('${id}','${campo}',this.value)"></div>`;
-    const selo=d.cliId?'<span style="color:var(--verde);font-size:12px;font-weight:700">✓ cliente encontrado</span>':'<span style="color:var(--danger);font-size:12px;font-weight:700">❓ escolha ou cadastre o cliente</span>';
+    const cliAch=d.cliId?clientes.find(c=>c.id===d.cliId):null;
+    const selo=cliAch?`<span style="color:var(--verde);font-size:12px;font-weight:700">✓ ${confEsc(cliAch.nome)}</span>`:'<span style="color:var(--danger);font-size:12px;font-weight:700">❓ cliente não encontrado pelo número</span>';
     const sel=(campo,opts)=>opts.replace(`value="${confEsc(d[campo])}"`,`value="${confEsc(d[campo])}" selected`);
     return `<div class="resumo-card">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem">
         <div><strong>Pedido #${confEsc(row.num||'—')}</strong> · entrega ${confEsc(exibeData(d.data)||'sem data')}</div>${selo}
       </div>
-      <div class="fs"><label>Cliente</label><input type="text" list="conf-dl" value="${confEsc(d.cliTxt)}" placeholder="Digite o nome ou o WhatsApp…" onchange="confEscolherCliente('${id}',this.value)"></div>
+      <div class="fs"><label>WhatsApp do cliente (é por ele que o cliente é achado)</label><input type="tel" inputmode="numeric" value="${confEsc(confFmtTel(d.cliTxt||(row.state||{}).ctel||''))}" placeholder="(49) 9 9999-9999" oninput="this.value=confFmtTel(this.value)" onchange="confEscolherCliente('${id}',this.value)"></div>
       ${f('produto','Produto(s)')}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem">${f('valor','Valor (R$, sem frete)','number','step="0.01"')}${f('entrega','Entrega (R$)','number','step="0.01"')}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem">${f('data','Data da entrega','date')}${f('dataConf','Confirmado em','date')}</div>
